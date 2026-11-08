@@ -320,6 +320,54 @@ test('HTTP security rejects foreign origin, rebinding host, oversized JSON, none
   assert.equal((await fetch(app.url + '/api/teacher/summary', { headers: { Authorization: 'Bearer teacher-test-secret' } })).status, 200);
 });
 
+test('event retention uses server receipt time, keeps the cutoff boundary and exposes the summary window', async t => {
+  const day = 86400000; let at = 100 * day;
+  const app = await httpApp(t, { now: () => at, config: { eventRetentionDays: 30 } });
+  const event = { sessionId: base.sessionId, lesson: 'nev-l4', type: 'session_start', t: 9999999999999 };
+  assert.equal((await post(app.url + '/api/learn/event', event)).status, 200);
+  at += 30 * day;
+  let summary = await (await fetch(app.url + '/api/teacher/summary')).json();
+  assert.equal(summary.events, 1); assert.equal(summary.storage.retentionDays, 30);
+  at++;
+  summary = await (await fetch(app.url + '/api/teacher/summary')).json();
+  assert.equal(summary.events, 0);
+  assert.equal(await fs.readFile(path.join(app.dir, 'data/learning-events.jsonl'), 'utf8'), '');
+});
+
+test('disabled event persistence preserves earlier records without accepting new ones', async t => {
+  const app = await httpApp(t, { config: { eventRetentionDays: 0 } });
+  const event = { sessionId: base.sessionId, lesson: 'nev-l4', type: 'session_start' };
+  const result = await (await post(app.url + '/api/learn/event', event)).json();
+  assert.equal(result.stored, false); assert.equal(result.reason, 'storage_disabled');
+  await assert.rejects(() => fs.stat(path.join(app.dir, 'data')), /ENOENT/);
+  await fs.mkdir(path.join(app.dir, 'data'));
+  const previous = JSON.stringify(cleanEvent(event, 1)) + '\n';
+  await fs.writeFile(path.join(app.dir, 'data/learning-events.jsonl'), previous);
+  const summary = await (await fetch(app.url + '/api/teacher/summary')).json();
+  assert.equal(summary.events, 1); assert.equal(summary.storage.enabled, false);
+  assert.equal(await fs.readFile(path.join(app.dir, 'data/learning-events.jsonl'), 'utf8'), previous);
+});
+
+test('full event storage returns 507 without discarding recent classroom records', async t => {
+  const app = await httpApp(t, { config: { eventMaxBytes: 350 } });
+  const event = { sessionId: base.sessionId, lesson: 'nev-l4', type: 'session_start', payload: { station: 'intro', target: '发动机' } };
+  assert.equal((await post(app.url + '/api/learn/event', event)).status, 200);
+  const file = path.join(app.dir, 'data/learning-events.jsonl'), previous = await fs.readFile(file, 'utf8');
+  const full = await post(app.url + '/api/learn/event', event);
+  assert.equal(full.status, 507); assert.equal((await full.json()).error, 'storage_full');
+  assert.equal(await fs.readFile(file, 'utf8'), previous);
+  assert.equal((await (await fetch(app.url + '/api/teacher/summary')).json()).events, 1);
+});
+
+test('unsafe event directory returns a bounded 503 response without leaking local paths', async t => {
+  const app = await httpApp(t);
+  await fs.writeFile(path.join(app.dir, 'data'), 'occupied by an existing file');
+  const response = await post(app.url + '/api/learn/event', { sessionId: base.sessionId, lesson: 'nev-l4', type: 'session_start' });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { ok: false, error: 'storage_unsafe_path', fallback: 'local' });
+  assert.equal(await fs.readFile(path.join(app.dir, 'data'), 'utf8'), 'occupied by an existing file');
+});
+
 test('HTTP multipart validation and cloud-unavailable fallback preserve privacy', async (t) => {
   const app = await httpApp(t);
   const response = await fetch(app.url + '/api/speech/assess', { method: 'POST', body: speechForm() });

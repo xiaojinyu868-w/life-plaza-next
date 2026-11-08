@@ -15,6 +15,7 @@
  </section>
  <section id="results" class="hidden" aria-label="课堂统计">
   <div class="stats" id="metrics"></div>
+  <p id="storage" class="note"></p>
   <div class="panel"><h2>课程记录</h2><table><thead><tr><th>课程</th><th>收到的事件</th></tr></thead><tbody id="lessons"></tbody></table><p class="note">一次课堂会产生多个事件，事件数不等于学员数。匿名会话可能对应同一人的多次打开。</p></div>
  </section>
  <footer><p class="note">只汇总已启用联机并成功发送的记录；离线练习不在这里。打字、点选、自报跟读不算检测到的开口。语音尝试次数不代表发音正确或已经掌握。应用不保存姓名、录音和自由文本转写。</p></footer>
@@ -37,6 +38,8 @@ $('access').addEventListener('submit',async event=>{
   $('lessons').replaceChildren();
   for(const [key,count]of Object.entries(data.lessons||{})){const row=document.createElement('tr'),label=document.createElement('td'),value=document.createElement('td');label.textContent=names[key]||key;value.textContent=String(count);row.append(label,value);$('lessons').append(row);}
   $('results').classList.remove('hidden');$('download').disabled=false;
+  const storage=data.storage;
+  $('storage').textContent=storage?(storage.enabled?`汇总范围：最近 ${storage.retentionDays} 天的匿名事件。过期事件已在本次读取时清理。`:'当前不新增保存学习事件。这里显示此前保留的记录。')+(storage.invalidRows?` 有 ${storage.invalidRows} 条格式异常记录未纳入统计，请联系部署方检查。`:''):'';
   $('status').textContent=data.events?`已读取 ${data.events} 个事件 · ${new Date().toLocaleTimeString('zh-CN')}`:'还没有课堂记录。回到车间启用“联机”后，新的练习记录会出现在这里。';
  }catch(error){$('status').textContent=error.name==='AbortError'?'读取超时，可以稍后重试。':error.message;}
  finally{clearTimeout(timer);$('refresh').disabled=false;}

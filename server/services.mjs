@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { createTencentSoe } from './tencent-soe.mjs';
+import { noticeConfiguration, privacyNotice } from './runtime-policy.mjs';
+import { createEventStore, EventStoreError } from './event-store.mjs';
 import { DATA, ERROR_SAMPLES, ROOT, SESSION_RE, cleanTurn, fallbackTurn, validateNpc, readLesson } from './canonical.mjs';
 
 export class HttpError extends Error {
@@ -15,7 +17,12 @@ const allowedEndpoint = (value) => {
   return u.href;
 };
 export function configuration(env = process.env) {
-  const number = (key, fallback, min, max) => Math.min(max, Math.max(min, Number(env[key]) || fallback));
+  const number = (key, fallback, min, max) => {
+    const value = env[key] === undefined || String(env[key]).trim() === '' ? fallback : Number(env[key]);
+    if (!Number.isFinite(value)) throw new Error('invalid_numeric_configuration');
+    return Math.min(max, Math.max(min, value));
+  };
+  const integer = (key, fallback, min, max) => Math.floor(number(key, fallback, min, max));
   return {
     dataDir: path.resolve(env.WORKSHOP_DATA_DIR || path.join(ROOT, 'data')),
     llmUrl: allowedEndpoint(env.WORKSHOP_LLM_URL), llmKey: env.WORKSHOP_LLM_API_KEY || '', llmModel: env.WORKSHOP_LLM_MODEL || '',
@@ -24,6 +31,11 @@ export function configuration(env = process.env) {
     tencentSoe: { appId: env.WORKSHOP_TENCENT_APP_ID || '', secretId: env.WORKSHOP_TENCENT_SECRET_ID || '', secretKey: env.WORKSHOP_TENCENT_SECRET_KEY || '', scoreCoeff: number('WORKSHOP_TENCENT_SCORE_COEFF', 1, 1, 4), timeoutMs: 10000 },
     corpusToken: env.WORKSHOP_CORPUS_TOKEN || '', corpusBase: 'https://corpus.chineseplus.net/api/v1',
     teacherToken: env.WORKSHOP_TEACHER_TOKEN || '', publicOrigin: env.WORKSHOP_PUBLIC_ORIGIN || '',
+    notices: noticeConfiguration(env),
+    eventRetentionDays: integer('WORKSHOP_EVENT_RETENTION_DAYS', 30, 0, 3650),
+    eventMaxBytes: integer('WORKSHOP_EVENT_MAX_BYTES', 67108864, 1024, 1073741824),
+    ipRequestsPerMinute: integer('WORKSHOP_IP_REQUESTS_PER_MINUTE', 6000, 180, 20000),
+    sessionRequestsPerMinute: integer('WORKSHOP_SESSION_REQUESTS_PER_MINUTE', 180, 30, 1000),
     llmSessionLimit: number('WORKSHOP_LLM_SESSION_LIMIT', 30, 1, 1000),
     speechSessionLimit: number('WORKSHOP_SPEECH_SESSION_LIMIT', 80, 1, 1000),
     maxConcurrent: number('WORKSHOP_MAX_CONCURRENT', 8, 1, 30),
@@ -38,14 +50,13 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now, tenc
   const sessions = new Map();
   const inflight = new Map();
   let corpusDay = '', corpusCalls = 0;
-  let writeQueue = Promise.resolve();
-  const eventPath = path.join(config.dataDir, 'learning-events.jsonl');
+  const eventStore = createEventStore({ dataDir: config.dataDir, retentionDays: config.eventRetentionDays, maxBytes: config.eventMaxBytes, now });
   const capabilities = () => ({
     npc: Boolean(config.llmUrl && config.llmModel && config.llmKey),
     asr: Boolean(config.asrUrl && config.asrModel && config.asrKey),
     assessment: tencent.configured || Boolean(config.assessmentUrl && config.assessmentKey),
     assessmentVendor: tencent.configured ? 'tencent-soe' : config.assessmentUrl && config.assessmentKey ? 'private-adapter' : null,
-    corpusRemote: Boolean(config.corpusToken), events: true,
+    corpusRemote: Boolean(config.corpusToken), events: config.eventRetentionDays !== 0,
     audioStored: false, transcriptStored: false,
   });
 
@@ -239,32 +250,27 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now, tenc
 
   async function event(body) {
     const cleaned = cleanEvent(body, now());
-    const operation = writeQueue.then(async () => {
-      await fs.mkdir(config.dataDir, { recursive: true });
-      await fs.appendFile(eventPath, JSON.stringify(cleaned) + '\n', { mode: 0o600 });
-    });
-    writeQueue = operation.catch(() => {});
-    await operation;
-    return { ok: true, stored: true, id: cleaned.id };
+    try { return await eventStore.append(cleaned); } catch (error) { throw eventError(error); }
+  }
+  function eventError(error) {
+    if (!(error instanceof EventStoreError)) return error;
+    return new HttpError(error.code === 'storage_full' ? 507 : error.code === 'storage_invalid_event' ? 400 : 503, error.code);
   }
   async function summary() {
-    await writeQueue;
-    let raw = '';
-    try { raw = await fs.readFile(eventPath, 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-    const totals = { sessions: new Set(), finished: new Set(), speechAttempts: 0, pronunciationAttempts: 0, hints: 0, events: 0, lessons: {} };
-    for (const line of raw.split('\n')) {
-      if (!line) continue;
-      let e; try { e = JSON.parse(line); } catch { continue; }
+    const totals = { sessions: new Set(), finished: new Set(), speechAttempts: 0, pronunciationAttempts: 0, hints: 0, events: 0, lessons: Object.create(null) };
+    let storage;
+    try { storage = await eventStore.scan(e => {
       totals.sessions.add(e.sessionId); totals.events++;
       if (e.type === 'session_finish') totals.finished.add(e.sessionId);
       if (e.type === 'speak_attempt' && ['browser_asr', 'cloud_asr'].includes(e.payload?.inputMode) && e.payload?.asrOk === true) totals.speechAttempts++;
       if (e.type === 'pronunciation_attempt' && e.payload?.capability === 'L2') totals.pronunciationAttempts++;
       if (e.type === 'hint_used') totals.hints++;
       totals.lessons[e.lesson] = (totals.lessons[e.lesson] || 0) + 1;
-    }
-    return { ok: true, sessions: totals.sessions.size, completedSessions: totals.finished.size, speechAttempts: totals.speechAttempts, pronunciationAttempts: totals.pronunciationAttempts, hints: totals.hints, events: totals.events, lessons: totals.lessons, individualRecords: false };
+    }); } catch (error) { throw eventError(error); }
+    return { ok: true, sessions: totals.sessions.size, completedSessions: totals.finished.size, speechAttempts: totals.speechAttempts, pronunciationAttempts: totals.pronunciationAttempts, hints: totals.hints, events: totals.events, lessons: totals.lessons, individualRecords: false,
+      storage: { ...privacyNotice(config, capabilities()).events, bytes: storage.bytes, invalidRows: storage.invalidRows } };
   }
-  return { capabilities, npc, speech, evidence, corpusSearch, event, summary };
+  return { capabilities, privacy: () => privacyNotice(config, capabilities()), npc, speech, evidence, corpusSearch, event, summary };
 }
 
 function normalizeAssessment(input, reference) {

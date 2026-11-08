@@ -13,7 +13,7 @@
   const AUTO = window.CDG_AUTOSTATE || null; // 测试用：直接跳到某一步
   const LESSON = window.CDG_CURRENT_LESSON;
   const NET = window.CDG_NET ? window.CDG_NET.createClient() : null;
-  let capabilities = {}, conversationOpen = false, currentStep = '', cloudRecording = null, micBusy = false, micConsent = false;
+  let capabilities = {}, privacy = {}, conversationOpen = false, currentStep = '', cloudRecording = null, micBusy = false, micConsent = false;
   let speechDialog = null, npcDialog = null, micEpoch = 0;
   let attemptSource = 'text', speechResult = null, promptSerial = 0;
   const chatHistory = [];
@@ -26,15 +26,30 @@
   async function toggleOnline() {
     if (!NET) return;
     const b = $('tools').querySelector('[data-t="online"]');
-    if (NET.enabled) { NET.setEnabled(false); if (speechDialog || npcDialog) closeModal(); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
+    if (NET.enabled) { NET.setEnabled(false); if (speechDialog || npcDialog) closeModal(); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; privacy = {}; micConsent = false; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
     if (!/^https?:$/.test(location.protocol)) { toast('这是离线文件。需要联机时，请从本机服务地址打开；当前仍可完整上课。'); return; }
     NET.setEnabled(true); b.textContent = '连接中…';
     try {
       const s = await NET.request('/api/status'); if (!NET.enabled) return;
-      capabilities = s.capabilities || {}; b.textContent = '联机'; b.setAttribute('aria-pressed', 'true');
+      capabilities = s.capabilities || {}; privacy = s.privacy || {}; micConsent = false; b.textContent = '联机'; b.setAttribute('aria-pressed', 'true');
       toast(capabilities.npc ? '联机增强已启用，课堂流程仍由本地控制。' : '服务已连接；对话模型未配置，当前由课堂脚本回答。');
       track('session_start', { level: ST.level, plugged: ST.plugged });
     } catch (_) { NET.setEnabled(false); b.textContent = '离线'; toast('服务暂时连不上，继续离线上课。'); }
+  }
+  function voiceNotice() {
+    const providers = Array.isArray(privacy.speech?.providers) ? privacy.speech.providers.slice(0, 2) : [];
+    let html = '<p>语音由以下服务处理。应用不保存录音或自由转写；你也可以继续打字、输入拼音或点选。</p>';
+    if (privacy.operatorName) html += `<p>课件运营方：${esc(privacy.operatorName)}</p>`;
+    for (const p of providers) {
+      let policy = '';
+      try { const u = new URL(p.policyUrl); if (u.protocol === 'https:' && !u.username && !u.password && !u.search && !u.hash) policy = ` <a href="${esc(u.href)}" target="_blank" rel="noopener noreferrer">服务商隐私说明</a>`; } catch (_) {}
+      html += `<p>${p.kind === 'assessment' ? '跟读评测' : '语音识别'}：${esc(p.name || '提供方未填写')}<br>处理地域：${esc(p.region || '未填写')}<br>供应商保存规则：${esc(p.audioRetention || '未填写，请向部署方确认')}${policy}</p>`;
+    }
+    if (!providers.length && (capabilities.asr || capabilities.assessment)) html += '<p>部署方尚未填写云语音提供方、处理地域与保存规则，请先向部署方确认。</p>';
+    html += `<p>${providers.length || capabilities.asr || capabilities.assessment ? '云端失败时会尝试' : '当前使用'}浏览器识别。它可能把音频发送至浏览器厂商的网络服务，地域与保存方式取决于浏览器；这里只识别文字，不评发音。</p>`;
+    if (privacy.events?.enabled === false) html += '<p>当前不新增保存匿名学习事件。</p>';
+    else if (Number.isInteger(privacy.events?.retentionDays)) html += `<p>匿名学习事件保留 ${privacy.events.retentionDays} 天，之后在下次记录或教师查询时清理。不同于供应商保存录音的规则。</p>`;
+    return `<div class="voice-notice">${html}</div>`;
   }
   function askMaster() {
     if (conversationOpen) return;
@@ -43,7 +58,7 @@
       <label class="npc-role">和谁说 <select aria-label="对话伙伴"><option value="wang">王明师傅</option><option value="dragon">小龙学徒</option></select></label>
       <form class="npc-form"><input aria-label="想问师傅的问题" maxlength="300" placeholder="例如：纯电动汽车有发动机吗？"><button type="submit">问一问</button></form>
       <div class="npc-voice-controls"><button type="button" data-npc-mic>用语音说</button><span data-npc-voice-status role="status"></span></div>
-      <div class="npc-consent hidden"><p>录音会发送至部署方配置的语音服务；浏览器识别可能使用浏览器厂商的网络服务。本课件不保存录音。也可以继续打字。</p><button type="button" data-npc-consent>同意本次语音练习</button></div>
+      <div class="npc-consent hidden">${voiceNotice()}<button type="button" data-npc-consent>同意本次语音练习</button></div>
       <div class="npc-answer" aria-live="polite"></div><p class="pending">${NET?.enabled ? '联机回答经过校验；服务失败时使用本地回答。' : '当前离线：可以查询三种车的基本属性。'}</p>`);
     conversationOpen = true;
     const form = m.querySelector('form'), inp = form.querySelector('input'), out = m.querySelector('.npc-answer');
@@ -445,7 +460,7 @@
     if (!askState) { toast('请在本题的跟读或作答时使用语音。'); return; }
     if (!NET?.enabled) { toast('当前为离线模式。可以打字、输入拼音或点选；使用联网语音请先开启“联机”。'); return; }
     if (!micConsent) {
-      const m = modal('<button class="close" data-x="1">×</button><h2>用语音练习</h2><p>录音会发送至本机服务所配置的语音供应商；浏览器识别可能使用浏览器厂商的网络服务。本课件不保存录音，联机时记录匿名练习结果。供应商的数据处理规则由部署方说明。</p><p>也可以继续打字或点选，课程不会受影响。</p><button type="button" data-consent="1">同意本次语音练习</button>');
+      const m = modal(`<button class="close" data-x="1">×</button><h2>用语音练习</h2>${voiceNotice()}<button type="button" data-consent="1">同意本次语音练习</button>`);
       m.querySelector('[data-consent]').onclick = () => { micConsent = true; closeModal(); micToggle(); }; return;
     }
     if (!capabilities.asr && !capabilities.assessment) return browserMic();

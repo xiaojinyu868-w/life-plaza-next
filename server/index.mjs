@@ -3,8 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { ROOT } from './canonical.mjs';
+import { ROOT, SESSION_RE } from './canonical.mjs';
 import { configuration, createServices, HttpError } from './services.mjs';
+import { createRequestLimiter, validateHosting } from './runtime-policy.mjs';
 
 export async function readBody(req, limit = 32000) {
   const claimed = Number(req.headers['content-length']);
@@ -30,19 +31,20 @@ const sameSecret = (a, b) => {
 
 export function createApp({ config = configuration(), fetchImpl, now, staticDir = path.join(ROOT, 'dist') } = {}) {
   const service = createServices(config, { fetchImpl, now });
-  const limits = new Map();
+  validateHosting(config, service.capabilities());
+  const limits = createRequestLimiter({ now, ipLimit: config.ipRequestsPerMinute, sessionLimit: config.sessionRequestsPerMinute });
   const send = (res, status, value) => {
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
     res.end(JSON.stringify(value));
   };
-  const rateLimit = (req) => {
-    const nowMs = Date.now(), key = req.socket.remoteAddress || 'unknown';
-    const entry = limits.get(key);
-    if (!entry || entry.until < nowMs) {
-      if (limits.size > 5000) for (const [k, e] of limits) if (e.until < nowMs) limits.delete(k);
-      limits.set(key, { count: 1, until: nowMs + 60000 }); return;
-    }
-    if (++entry.count > 180) throw new HttpError(429, 'request_rate_limit');
+  const checkLimit = (result, res) => {
+    if (result.ok) return;
+    res.setHeader('Retry-After', String(result.retryAfter));
+    throw new HttpError(429, result.code);
+  };
+  const sessionLimit = (id, res) => {
+    if (typeof id !== 'string' || !SESSION_RE.test(id)) throw new HttpError(400, 'invalid_session');
+    checkLimit(limits.session(id), res);
   };
   const checkOrigin = (req) => {
     const origin = req.headers.origin;
@@ -61,16 +63,18 @@ export function createApp({ config = configuration(), fetchImpl, now, staticDir 
       const url = new URL(req.url, 'http://localhost');
       checkOrigin(req);
       if (url.pathname.startsWith('/api/')) {
-        rateLimit(req);
-        if (req.method === 'GET' && url.pathname === '/api/status') return send(res, 200, { ok: true, service: 'workshop', capabilities: service.capabilities(), privacy: { audioStored: false, namesStored: false, transcriptStored: false }, evidenceSource: 'bundled-snapshot', teacherRequiresToken: Boolean(config.teacherToken || config.publicOrigin) });
+        checkLimit(limits.ip(req.socket.remoteAddress || 'unknown'), res);
+        if (req.method === 'GET' && url.pathname === '/api/status') return send(res, 200, { ok: true, service: 'workshop', capabilities: service.capabilities(), privacy: service.privacy(), evidenceSource: 'bundled-snapshot', teacherRequiresToken: Boolean(config.teacherToken || config.publicOrigin) });
         if (req.method === 'GET' && url.pathname === '/api/corpus/evidence') return send(res, 200, await service.evidence(url.searchParams.get('ev') || ''));
         if (req.method === 'GET' && url.pathname === '/api/teacher/summary') {
           if (!teacherAllowed(req)) throw new HttpError(401, 'teacher_auth_required');
           return send(res, 200, await service.summary());
         }
-        if (req.method === 'POST' && url.pathname === '/api/npc/turn') return send(res, 200, await service.npc(await jsonBody(req)));
+        if (req.method === 'POST' && ['/api/npc/turn', '/api/learn/event'].includes(url.pathname)) {
+          const body = await jsonBody(req); sessionLimit(body?.sessionId, res);
+          return send(res, 200, await (url.pathname === '/api/npc/turn' ? service.npc(body) : service.event(body)));
+        }
         if (req.method === 'POST' && url.pathname === '/api/corpus/search') return send(res, 200, await service.corpusSearch(await jsonBody(req)));
-        if (req.method === 'POST' && url.pathname === '/api/learn/event') return send(res, 200, await service.event(await jsonBody(req)));
         if (req.method === 'POST' && url.pathname === '/api/speech/assess') {
           const contentType = String(req.headers['content-type'] || '');
           if (!/^multipart\/form-data;\s*boundary=.{1,200}$/.test(contentType)) throw new HttpError(415, 'multipart_required');
@@ -79,6 +83,7 @@ export function createApp({ config = configuration(), fetchImpl, now, staticDir 
           try { form = await new Request('http://localhost', { method: 'POST', headers: { 'Content-Type': contentType }, body }).formData(); }
           catch { throw new HttpError(400, 'invalid_multipart'); }
           if ([...form.keys()].length > 12) throw new HttpError(400, 'too_many_fields');
+          sessionLimit(form.get('sessionId'), res);
           return send(res, 200, await service.speech(form));
         }
         throw new HttpError(404, 'api_not_found');

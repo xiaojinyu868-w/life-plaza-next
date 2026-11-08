@@ -9,7 +9,7 @@ const { once } = require('node:events');
   const { configuration } = await import('../server/services.mjs');
   const out = path.resolve('artifacts/npc-browser'); await fs.mkdir(out, { recursive:true });
   const providerCalls = [];
-  const { server } = createApp({ config:{...configuration({}),dataDir:'.local/npc-browser-data',llmUrl:'https://mock.invalid/chat',llmKey:'synthetic-test',llmModel:'mock',asrUrl:'https://mock.invalid/asr',asrKey:'synthetic-test',asrModel:'mock'},
+  const { server } = createApp({ config:{...configuration({ WORKSHOP_OPERATOR_NAME:'模拟课堂 <img src=x>', WORKSHOP_ASR_PROVIDER_NAME:'模拟识别服务', WORKSHOP_ASR_REGION:'本机测试地域', WORKSHOP_ASR_AUDIO_RETENTION:'仅测试说明，未调用真实服务', WORKSHOP_ASR_POLICY_URL:'https://example.test/privacy' }),dataDir:'.local/npc-browser-data',llmUrl:'https://mock.invalid/chat',llmKey:'synthetic-test',llmModel:'mock',asrUrl:'https://mock.invalid/asr',asrKey:'synthetic-test',asrModel:'mock'},
     fetchImpl:async (url,req) => {
       providerCalls.push(url.endsWith('/asr')?'asr':'llm');
       if(url.endsWith('/asr')) { assert.equal(req.body.get('refText'),null);assert.equal(req.body.get('prompt'),null);return new Response(JSON.stringify({text:'它有发动机吗？'})); }
@@ -42,7 +42,14 @@ const { once } = require('node:events');
       await page.evaluate(()=>{window.__cdg.ST.focus='bev';});
       const before=await page.evaluate(()=>({step:window.__cdg.currentPrompt.step,responses:window.__cdg.ST.responses,spoken:window.__cdg.ST.spoken}));
       await page.locator('[data-t="ask"]').click();
-      await page.locator('[data-npc-mic]').click();await page.locator('[data-npc-consent]').click();
+      await page.locator('[data-npc-mic]').click();
+      const notice = await page.locator('.npc-consent').textContent();
+      for(const text of ['模拟识别服务','本机测试地域','未调用真实服务','匿名学习事件保留 30 天','浏览器厂商'])assert.ok(notice.includes(text));
+      assert.equal(await page.locator('.voice-notice img').count(),0,'public labels must remain text');
+      assert.equal(await page.locator('.voice-notice a').getAttribute('href'),'https://example.test/privacy');
+      assert.equal(providerCalls.filter(x=>x==='asr').length,viewport.width===1440?0:1,'opening the notice must not send audio');
+      await page.screenshot({path:path.join(out,`voice-notice-${viewport.width}.png`)});
+      await page.locator('[data-npc-consent]').click();
       await page.waitForFunction(()=>document.querySelector('[data-npc-mic]').textContent==='停止录音');
       await page.locator('[data-npc-mic]').click();await page.waitForFunction(()=>document.querySelector('.npc-form input').value==='它有发动机吗？');
       assert.equal(requests.filter(r=>r.purpose!=='feedback').length,0,'recognition should wait for confirmation');
@@ -62,7 +69,12 @@ const { once } = require('node:events');
       await page.locator('[data-npc-mic]').click();await page.waitForFunction(()=>document.querySelector('[data-npc-mic]').textContent==='停止录音');
       await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>window.npcCaptureStops.at(-1)),true);
       assert.equal(await page.locator('.npc-form').count(),0);assert.deepEqual(errors,[]);
-      reports.push({viewport,geometry,coachingTwoVariants:true,localVerdictPreserved:true,pronounCorrect:true,voiceQuestionConfirmed:true,partnerSelection:true,closeDiscardsAudio:true,errors,mockProviders:true});await page.close();
+      await page.locator('[data-t="online"]').click();await page.locator('[data-t="online"]').click();
+      await page.waitForFunction(()=>document.querySelector('[data-t="online"]').textContent==='联机');
+      await page.locator('[data-t="ask"]').click();await page.locator('[data-npc-mic]').click();
+      assert.equal(await page.locator('.npc-consent').isVisible(),true,'reconnecting must show the current disclosure again');
+      assert.equal(await page.locator('[data-npc-mic]').textContent(),'用语音说');
+      reports.push({viewport,geometry,coachingTwoVariants:true,localVerdictPreserved:true,pronounCorrect:true,voiceQuestionConfirmed:true,partnerSelection:true,closeDiscardsAudio:true,noticeBeforeAudio:true,reconnectRenewsConsent:true,errors,mockProviders:true});await page.close();
     }
     await fs.writeFile(path.join(out,'report.json'),JSON.stringify({reports,providerCalls,realModelTested:false,realVoiceTested:false},null,2));console.log(JSON.stringify(reports,null,2));
   } finally {await browser.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

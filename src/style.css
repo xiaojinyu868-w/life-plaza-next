@@ -260,6 +260,8 @@ body.plugged .lbl.plaque .seal { box-shadow: 0 0 18px 6px rgba(255,170,120,.7), 
 .npc-voice-controls button,.npc-consent button { min-height:44px; border:1px solid var(--ll-teal); color:var(--ll-teal); background:#fffdf7; border-radius:9px; padding:10px 14px; cursor:pointer; font:600 14px var(--ll-sans); }
 .npc-voice-controls button:disabled { opacity:.5; cursor:wait; }
 .npc-consent { margin:10px 0; padding:12px; border-left:3px solid var(--ll-teal); background:#e4efea; font-size:13px; }
+.voice-notice { font-size:13px; line-height:1.65; overflow-wrap:anywhere; }
+.voice-notice a { color:var(--ll-teal); text-decoration:underline; }
 .npc-coaching { color:var(--ll-ink); font:15px/1.8 var(--ll-font); }
 .npc-coaching b { color:var(--ll-teal); font:600 12px var(--ll-sans); margin-right:6px; }
 .npc-coaching ruby rt { font:10px var(--ll-sans); }.npc-coaching small { display:block; font:12px/1.5 var(--ll-sans); color:var(--ll-soft); }

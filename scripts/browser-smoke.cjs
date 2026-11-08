@@ -102,9 +102,10 @@ async function checkOnlineAndMobile(browser) {
   await teacher.goto(base + '/teacher.html'); await teacher.locator('#refresh').click();
   await teacher.locator('#results:not(.hidden)').waitFor();
   const metricCount = await teacher.locator('.metric').count(); assert.equal(metricCount, 5);
+  const storageNotice = await teacher.locator('#storage').textContent(); assert.match(storageNotice, /最近 30 天/);
   await teacher.screenshot({ path: path.join(output, 'teacher-summary.png') });
   await teacher.close(); await page.close(); assert.deepEqual(errors, []);
-  return { errors, connectedFallbackAnswer: answer, serviceFailureFallback: fallback, mobileGeometry: geometry, teacherMetrics: metricCount };
+  return { errors, connectedFallbackAnswer: answer, serviceFailureFallback: fallback, mobileGeometry: geometry, teacherMetrics: metricCount, storageNotice };
 }
 
 (async () => {
@@ -114,9 +115,9 @@ async function checkOnlineAndMobile(browser) {
     const cases = [['nev-l5', true], ['nev-l4', false], ['nev-l4', true]];
     const selected = process.env.WORKSHOP_TEST_CASE;
     const selectedCases = selected ? cases.filter(([lesson, plugged]) => `${lesson}-${plugged ? 'plugged' : 'unplugged'}` === selected) : cases;
-    assert.ok(selectedCases.length, 'Unknown WORKSHOP_TEST_CASE');
+    assert.ok(selectedCases.length || selected === 'integration', 'Unknown WORKSHOP_TEST_CASE');
     for (const [lesson, plugged] of selectedCases) courses.push(await completeLesson(browser, lesson, plugged));
-    const integration = selected ? null : await checkOnlineAndMobile(browser);
+    const integration = !selected || selected === 'integration' ? await checkOnlineAndMobile(browser) : null;
     const result = { testedAt: new Date().toISOString(), mode: 'real-browser-with-scripted-inputs', realVoiceTested: false, realModelTested: false, courses, integration };
     fs.writeFileSync(path.join(output, selected ? `report-${selected}.json` : 'report.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
