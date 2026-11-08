@@ -1,0 +1,19 @@
+{
+  "name": "life-plaza-next",
+  "version": "0.2.0",
+  "private": true,
+  "description": "插电工坊：离线可用的职业中文情境学习",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node build.js",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "test:rules": "node test/logic.test.js",
+    "test:layout": "node test/layout.test.js",
+    "test:flow": "node test/flow.harness.js",
+    "test:flow:unplugged": "node test/flow.harness.js unplugged",
+    "test:net": "node --test test/net.test.js",
+    "test:services": "node --test test/net.test.js test/server.test.mjs test/splat-downsample.test.mjs test/lesson.test.js",
+    "test:browser": "node scripts/browser-smoke.cjs"
+  },
+  "devDependencies": { "playwright": "1.63.0" }
+}

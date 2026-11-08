@@ -1,0 +1,1158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:life-plaza-next:lesson:v1",
+  "title": "Declarative workshop lesson v1",
+  "description": "Run CDG_LESSON.validate as well: it checks evidence references, ID uniqueness, finite commands, pool cycles and terminal finish. No executable JS is permitted.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,80}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "textbook-adaptation",
+            "authored-pending-review"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "textbook": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lesson": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "name",
+        "lesson",
+        "pages"
+      ],
+      "additionalProperties": false
+    },
+    "level": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "range": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "default",
+        "range"
+      ],
+      "additionalProperties": false
+    },
+    "roles": {
+      "type": "object",
+      "properties": {
+        "master": {
+          "type": "string",
+          "minLength": 1
+        },
+        "learner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "apprentice": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "master",
+        "learner",
+        "apprentice"
+      ],
+      "additionalProperties": false
+    },
+    "facts": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "vocabulary": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "grammar": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "dict": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 3,
+        "maxItems": 4
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "channels": {
+      "$ref": "#/$defs/value"
+    },
+    "cards": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "wordChains": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "hsk": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "assets": {
+      "type": "object",
+      "properties": {
+        "marble": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "note": {
+          "type": "string"
+        },
+        "place": {
+          "type": "object",
+          "properties": {
+            "scale": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "flip": {
+              "type": "boolean"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "shelf": {
+          "type": "array",
+          "maxItems": 15,
+          "items": {
+            "type": "object",
+            "required": [
+              "bay",
+              "w",
+              "note"
+            ],
+            "properties": {
+              "bay": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2
+              },
+              "w": {
+                "type": "string",
+                "minLength": 1
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1
+              },
+              "ev": {
+                "$ref": "#/$defs/identifier"
+              },
+              "on": {
+                "type": "boolean"
+              },
+              "grey": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "shelfBayNames": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "pools": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,80}$"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            },
+            "commands": {
+              "$ref": "#/$defs/commands"
+            }
+          },
+          "required": [
+            "id",
+            "commands"
+          ],
+          "additionalProperties": false
+        },
+        "minItems": 1,
+        "maxItems": 100
+      }
+    },
+    "stations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/station"
+      },
+      "minItems": 1,
+      "maxItems": 30
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "provenance",
+    "level",
+    "roles",
+    "dict",
+    "evidence",
+    "cards",
+    "pools",
+    "stations"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,80}$"
+    },
+    "reference": {
+      "type": "object",
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+        }
+      },
+      "required": [
+        "$ref"
+      ],
+      "additionalProperties": false
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          },
+          "propertyNames": {
+            "not": {
+              "enum": [
+                "__proto__",
+                "prototype",
+                "constructor"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "all"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "any"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+            },
+            "is": {
+              "type": [
+                "null",
+                "boolean",
+                "number",
+                "string"
+              ]
+            }
+          },
+          "required": [
+            "path",
+            "is"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+            },
+            "in": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "null",
+                  "boolean",
+                  "number",
+                  "string"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "path",
+            "in"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+            },
+            "contains": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path",
+            "contains"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+            },
+            "startsWith": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "path",
+            "startsWith"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(state\\.(plugged|level|focus)|input|normalized|chip|answer|result(\\.[A-Za-z][A-Za-z0-9_]*)*)$"
+            },
+            "truthy": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "path",
+            "truthy"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "line": {
+      "type": "object",
+      "properties": {
+        "zh": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "$ref": "#/$defs/reference"
+            }
+          ]
+        },
+        "en": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/reference"
+            }
+          ]
+        },
+        "teacher": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "zh"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "ch",
+        "q",
+        "hits",
+        "at",
+        "src"
+      ],
+      "properties": {
+        "ch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "q": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hits": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "src": {
+          "type": "string",
+          "minLength": 1
+        },
+        "zh": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "yeItem": {
+      "type": "object",
+      "required": [
+        "parts",
+        "cats",
+        "ok"
+      ],
+      "properties": {
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "minItems": 2
+        },
+        "cats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ok": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "en": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "cfg": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string",
+          "minLength": 1
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "optEn": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "answer": {
+          "type": "string"
+        },
+        "hints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "noInput": {
+          "type": "boolean"
+        },
+        "noAnswerChip": {
+          "type": "boolean"
+        },
+        "plugAction": {
+          "type": "boolean"
+        },
+        "speechTarget": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "additionalProperties": false
+    },
+    "feedback": {
+      "type": "object",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/condition"
+        },
+        "msg": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seal": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,80}$"
+        },
+        "suggest": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "oneOf": [
+                {
+                  "enum": [
+                    "A",
+                    "B",
+                    "END",
+                    "yeA",
+                    "yeEnd",
+                    "shiduima",
+                    "maduima",
+                    "xhdc",
+                    "ne",
+                    "noTag",
+                    "noSubj",
+                    "noPred"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/reference"
+                }
+              ]
+            },
+            "kinds": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "A",
+                  "B",
+                  "END",
+                  "yeA",
+                  "yeEnd",
+                  "shiduima",
+                  "maduima",
+                  "xhdc",
+                  "ne",
+                  "noTag",
+                  "noSubj",
+                  "noPred"
+                ]
+              },
+              "minItems": 1
+            },
+            "wrong": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/reference"
+                }
+              ]
+            },
+            "right": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/reference"
+                }
+              ]
+            },
+            "sentence": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/reference"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "msg"
+      ],
+      "additionalProperties": false
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/command"
+      },
+      "maxItems": 500
+    },
+    "check": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "word"
+            },
+            "target": {
+              "type": "string",
+              "minLength": 1
+            },
+            "others": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "alts": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "value": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "when": {
+                        "$ref": "#/$defs/condition"
+                      }
+                    },
+                    "required": [
+                      "value",
+                      "when"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "selfReport": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "type",
+            "target"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "confirm"
+            },
+            "truth": {
+              "type": "boolean"
+            },
+            "fixes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "type",
+            "truth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "yeItem"
+            },
+            "item": {
+              "$ref": "#/$defs/yeItem"
+            }
+          },
+          "required": [
+            "type",
+            "item"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "dragonFix"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "whyHybrid"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "dianWord"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "question"
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "choice"
+            },
+            "answers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            },
+            "mode": {
+              "enum": [
+                "exact",
+                "contains",
+                "prefix"
+              ]
+            }
+          },
+          "required": [
+            "type",
+            "answers"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "command": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "say"
+            },
+            "who": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            },
+            "line": {
+              "$ref": "#/$defs/line"
+            },
+            "options": {
+              "type": "object",
+              "properties": {
+                "seal": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,80}$"
+                },
+                "reply": {
+                  "type": "boolean"
+                },
+                "compare": {
+                  "$ref": "#/$defs/value"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "op",
+            "who",
+            "line"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "action"
+            },
+            "name": {
+              "enum": [
+                "scene",
+                "camera",
+                "focus",
+                "compare",
+                "point",
+                "pulse",
+                "flow",
+                "board",
+                "plug",
+                "animate",
+                "sparks",
+                "toast",
+                "teacher",
+                "wait",
+                "departure"
+              ]
+            },
+            "args": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/value"
+              }
+            }
+          },
+          "required": [
+            "op",
+            "name",
+            "args"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "ask"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            },
+            "cfg": {
+              "$ref": "#/$defs/cfg"
+            },
+            "check": {
+              "$ref": "#/$defs/check"
+            },
+            "feedback": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/feedback"
+              },
+              "minItems": 1
+            },
+            "attempt": {
+              "$ref": "#/$defs/commands"
+            },
+            "after": {
+              "$ref": "#/$defs/commands"
+            }
+          },
+          "required": [
+            "op",
+            "id",
+            "cfg",
+            "check",
+            "feedback"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "if"
+            },
+            "when": {
+              "$ref": "#/$defs/condition"
+            },
+            "then": {
+              "$ref": "#/$defs/commands"
+            },
+            "else": {
+              "$ref": "#/$defs/commands"
+            }
+          },
+          "required": [
+            "op",
+            "when",
+            "then"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "pool"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,80}$"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "op",
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "op": {
+              "const": "finish"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "station": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,80}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commands": {
+          "$ref": "#/$defs/commands"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "commands"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

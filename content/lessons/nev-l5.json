@@ -1,0 +1,3358 @@
+{
+  "schemaVersion": 1,
+  "id": "nev-l5",
+  "title": "能量回收 · 自编试课",
+  "provenance": {
+    "kind": "authored-pending-review",
+    "note": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+  },
+  "level": {
+    "default": 2,
+    "range": [
+      1,
+      3
+    ]
+  },
+  "roles": {
+    "master": "王明",
+    "learner": "马丁",
+    "apprentice": "小龙"
+  },
+  "facts": {
+    "phev": {
+      "nev": 1,
+      "engine": 1,
+      "motor": 1,
+      "battery": 1,
+      "fuel": 1,
+      "elec": 1
+    },
+    "bev": {
+      "nev": 1,
+      "engine": 0,
+      "motor": 1,
+      "battery": 1,
+      "fuel": 0,
+      "elec": 1
+    },
+    "ice": {
+      "nev": 0,
+      "engine": 1,
+      "motor": 0,
+      "battery": 0,
+      "fuel": 1,
+      "elec": 0
+    }
+  },
+  "vocabulary": [
+    "制动",
+    "动能",
+    "能量回收"
+  ],
+  "grammar": [
+    "把……转化成……"
+  ],
+  "dict": {
+    "制动": [
+      "zhìdòng",
+      "braking",
+      "n",
+      "自编样例，待教师审阅"
+    ],
+    "动能": [
+      "dòngnéng",
+      "kinetic energy",
+      "n",
+      "自编样例，待教师审阅"
+    ],
+    "能量回收": [
+      "néngliàng huíshōu",
+      "energy recovery",
+      "n",
+      "自编样例，待教师审阅"
+    ],
+    "把": [
+      "bǎ",
+      "object marker",
+      "g",
+      "自编样例"
+    ],
+    "转化成": [
+      "zhuǎnhuà chéng",
+      "convert into",
+      "g",
+      "自编样例"
+    ],
+    "电能": [
+      "diànnéng",
+      "electrical energy",
+      "r",
+      "第4课复习"
+    ],
+    "电池": [
+      "diànchí",
+      "battery",
+      "r",
+      "第4课复习"
+    ],
+    "驱动电机": [
+      "qūdòng diànjī",
+      "driving motor",
+      "r",
+      "第4课复习"
+    ],
+    "练习": [
+      "liànxí",
+      "practise",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "句子": [
+      "jùzi",
+      "sentence",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "最后": [
+      "zuìhòu",
+      "finally",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "制动时": [
+      "zhìdòng shí",
+      "when braking",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "回收": [
+      "huíshōu",
+      "recover",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "能量": [
+      "néngliàng",
+      "energy",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "一部分": [
+      "yí bùfen",
+      "a portion",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "慢下来": [
+      "màn xiàlái",
+      "slow down",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "变成": [
+      "biànchéng",
+      "become",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "只能": [
+      "zhǐ néng",
+      "can only",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "教": [
+      "jiāo",
+      "teach",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "看一看": [
+      "kàn yi kàn",
+      "take a look",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "运动": [
+      "yùndòng",
+      "in motion",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "系统": [
+      "xìtǒng",
+      "system",
+      "b",
+      "自编教学表达，待审阅"
+    ],
+    "请教": [
+      "qǐngjiào",
+      "ask someone to explain",
+      "b",
+      "自编教学表达，待审阅"
+    ]
+  },
+  "evidence": {},
+  "channels": {
+    "0": "教材库",
+    "1": "教学视频库",
+    "2": "中介语库（学习者作文）",
+    "3": "母语口语库",
+    "4": "母语书面语库"
+  },
+  "cards": {
+    "制动": {
+      "authored": {
+        "label": "自编教学样例 · 待教师审阅",
+        "ex": "汽车制动时，速度变慢。"
+      },
+      "graph": {
+        "corpus": [],
+        "collocations": [],
+        "errors": [],
+        "confusables": []
+      }
+    },
+    "动能": {
+      "authored": {
+        "label": "自编教学样例 · 待教师审阅",
+        "ex": "运动的汽车有动能。"
+      },
+      "graph": {
+        "corpus": [],
+        "collocations": [],
+        "errors": [],
+        "confusables": []
+      }
+    },
+    "能量回收": {
+      "authored": {
+        "label": "自编教学样例 · 待教师审阅",
+        "ex": "制动时，能量回收系统把一部分动能转化成电能。"
+      },
+      "graph": {
+        "corpus": [],
+        "collocations": [],
+        "errors": [],
+        "confusables": []
+      }
+    }
+  },
+  "wordChains": {
+    "电": [
+      [
+        "电话",
+        1,
+        "diànhuà",
+        "telephone"
+      ],
+      [
+        "电脑",
+        1,
+        "diànnǎo",
+        "computer"
+      ],
+      [
+        "电视",
+        1,
+        "diànshì",
+        "television"
+      ],
+      [
+        "电影",
+        1,
+        "diànyǐng",
+        "film, movie"
+      ],
+      [
+        "打电话",
+        1,
+        "dǎdiànhuà",
+        "make a phone call"
+      ],
+      [
+        "电影院",
+        1,
+        "diànyǐngyuàn",
+        "cinema"
+      ],
+      [
+        "电梯",
+        3,
+        "diàntī",
+        "elevator"
+      ],
+      [
+        "电子书",
+        3,
+        "diànzǐshū",
+        "electronic book"
+      ]
+    ]
+  },
+  "hsk": {
+    "w": {
+      "插": [
+        5,
+        "chā",
+        "to insert",
+        "别插手。",
+        "Bié chāshǒu.",
+        "Stay out of this."
+      ],
+      "电": [
+        3,
+        "diàn",
+        "lightning",
+        "打电话回家！",
+        "Dǎdiànhuà huíjiā!",
+        "Call home!"
+      ],
+      "式": [
+        4,
+        "shì",
+        "formula, pattern, rule, style, system",
+        "换种方式说。",
+        "Huànzhǒng fāngshì shuō.",
+        "Say it in another way."
+      ],
+      "混": [
+        6,
+        "hùn",
+        "muddy, confused",
+        "空气是气体的混合物。",
+        "Kōngqì shì qìtǐ de hùnhéwù.",
+        "Air is a mixture of gases."
+      ],
+      "合": [
+        3,
+        "hé",
+        "to combine, to join, to unite",
+        "这实在不合适。",
+        "Zhè shízài bù héshì.",
+        "It is highly improper."
+      ],
+      "动": [
+        2,
+        "dòng",
+        "(of sth) to move",
+        "他爱做运动。",
+        "Tā ài zuò yùndòng.",
+        "He loves exercising."
+      ],
+      "力": [
+        3,
+        "lì",
+        "strength, power",
+        "我在努力。",
+        "Wǒ zài nǔlì.",
+        "I'm working on doing that."
+      ],
+      "汽车": [
+        3,
+        "qìchē",
+        "car",
+        "汽车出问题了。",
+        "Qìchē chū wèntí le.",
+        "There's something wrong with the car."
+      ],
+      "汽": [
+        3,
+        "qì",
+        "gasoline",
+        "汽车出问题了。",
+        "Qìchē chū wèntí le.",
+        "There's something wrong with the car."
+      ],
+      "车": [
+        1,
+        "chē",
+        "car",
+        "出租车到了。",
+        "Chūzūchē dào le.",
+        "The taxi's here."
+      ],
+      "也": [
+        1,
+        "yě",
+        "also",
+        "我也这么想。",
+        "Wǒ yě zhème xiǎng.",
+        "I think so, too."
+      ],
+      "新能源": [
+        6,
+        "xīnnéngyuán",
+        "new energy",
+        "",
+        "",
+        ""
+      ],
+      "新": [
+        1,
+        "xīn",
+        "new",
+        "我是个新生。",
+        "Wǒ shì gè xīnshēng.",
+        "I'm a new student."
+      ],
+      "能": [
+        1,
+        "néng",
+        "can",
+        "不可能！",
+        "Bù kěnéng!",
+        "No way!"
+      ],
+      "源": [
+        5,
+        "yuán",
+        "spring",
+        "水是生命的源泉。",
+        "Shuǐshì shēngmìng de yuánquán.",
+        "Life cannot exist without water."
+      ],
+      "对": [
+        1,
+        "duì",
+        "correct",
+        "对不起。",
+        "Duìbùqǐ.",
+        "Excuse me."
+      ],
+      "为什么": [
+        2,
+        "wèishénme",
+        "why?",
+        "为什么不？",
+        "Wèishénme bù?",
+        "Why not?"
+      ],
+      "为": [
+        2,
+        "wèi",
+        "for",
+        "为什么？",
+        "Wèishénme?",
+        "Why?"
+      ],
+      "什": [
+        1,
+        "shén",
+        "what? mixed, miscellaneous",
+        "早饭吃什么？",
+        "Zǎofàn chī shénme?",
+        "What's for breakfast?"
+      ],
+      "么": [
+        1,
+        "me",
+        "interrogative particle",
+        "没那么冷。",
+        "Méi nàme lěng.",
+        "It wasn't that cold."
+      ],
+      "叫": [
+        1,
+        "jiào",
+        "call, is called",
+        "你叫什么名字？",
+        "Nǐ jiào shénme míngzì?",
+        "What's your name?"
+      ],
+      "驱": [
+        9,
+        "qū",
+        "to spur a horse on",
+        "这辆车靠天然气驱动。",
+        "Zhèliàng chēkào tiānránqì qūdòng.",
+        "This car runs on natural gas."
+      ],
+      "机": [
+        1,
+        "jī",
+        "desk",
+        "好时机。",
+        "Hǎoshíjī.",
+        "Nice timing."
+      ],
+      "和": [
+        1,
+        "hé",
+        "and",
+        "和气点。",
+        "Hé qìdiǎn.",
+        "Be nice."
+      ],
+      "池": [
+        5,
+        "chí",
+        "pool, pond",
+        "花园中有一个游泳池。",
+        "Huāyuán zhōng yǒu yī gè yóuyǒngchí.",
+        "There's a swimming pool in the garden."
+      ],
+      "认识": [
+        1,
+        "rènshi",
+        "to know",
+        "她认识我。",
+        "Tā rènshí wǒ.",
+        "She knows me."
+      ],
+      "认": [
+        1,
+        "rèn",
+        "to know, to recognize, to understand",
+        "她认识我。",
+        "Tā rènshí wǒ.",
+        "She knows me."
+      ],
+      "识": [
+        1,
+        "shí",
+        "knowledge",
+        "她认识我。",
+        "Tā rènshí wǒ.",
+        "She knows me."
+      ],
+      "纯": [
+        6,
+        "chún",
+        "pure, clean",
+        "样本不够纯净。",
+        "Yàngběn búgòu chúnjìng.",
+        "The sample isn't pure enough."
+      ],
+      "消耗": [
+        6,
+        "xiāohào",
+        "to consume",
+        "瑞士人消耗不少啤酒。",
+        "Ruìshìrén xiāohào bùshǎo píjiǔ.",
+        "The Swiss consume a large amount of beer."
+      ],
+      "消": [
+        4,
+        "xiāo",
+        "news, rumors",
+        "我有消息。",
+        "Wǒ yǒu xiāoxī.",
+        "I have news."
+      ],
+      "耗": [
+        6,
+        "hào",
+        "to consume, to use up",
+        "整个过程需要耗费数月。",
+        "Zhěnggè guòchéng xūyào hàofèi shùyuè.",
+        "The whole process will take months."
+      ],
+      "燃油": [
+        9,
+        "rányóu",
+        "fuel oil",
+        "燃油表坏了。",
+        "Rányóu biǎohuài le.",
+        "The fuel gauge is broken."
+      ],
+      "燃": [
+        5,
+        "rán",
+        "to ignite, to burn",
+        "木材可燃。",
+        "Mùcái kěrán.",
+        "Wood burns."
+      ],
+      "油": [
+        4,
+        "yóu",
+        "oil, fat, grease, lard",
+        "考试加油！",
+        "Kǎoshì jiāyóu!",
+        "Good luck on your test."
+      ],
+      "没有": [
+        1,
+        "méiyǒu",
+        "to not have",
+        "我没有姐妹。",
+        "Wǒ méiyǒu jiěmèi.",
+        "I don't have any sisters."
+      ],
+      "没": [
+        1,
+        "méi",
+        "not, none, gone",
+        "没关系。",
+        "Méiguānxì.",
+        "It's OK."
+      ],
+      "有": [
+        1,
+        "yǒu",
+        "have, has, there are, there is",
+        "有零钱吗？",
+        "Yǒu língqián ma?",
+        "Do you have any change?"
+      ],
+      "发": [
+        3,
+        "fā",
+        "send out",
+        "你没发烧。",
+        "Nǐ méi fāshāo.",
+        "You have no fever."
+      ],
+      "绿": [
+        2,
+        "lǜ",
+        "green",
+        "你喝绿茶吗？",
+        "Nǐ hē lǜchá ma?",
+        "Do you drink green tea?"
+      ],
+      "色": [
+        2,
+        "sè",
+        "color, tint, hue, shade",
+        "猫是黑色的。",
+        "Māo shì hēisè de.",
+        "The cat is black."
+      ],
+      "环": [
+        3,
+        "huán",
+        "bracelet, ring",
+        "她去年环球旅行。",
+        "Tā qùnián huánqiúlǚxíng.",
+        "She traveled around the world last year."
+      ],
+      "保": [
+        4,
+        "bǎo",
+        "to safeguard, to protect, to defend, to care for",
+        "保持安静",
+        "Bǎochí ānjìng",
+        "Keep it quiet."
+      ],
+      "吗": [
+        1,
+        "ma",
+        "(ending word for a question)",
+        "有零钱吗？",
+        "Yǒu língqián ma?",
+        "Do you have any change?"
+      ],
+      "工": [
+        1,
+        "gōng",
+        "labor, work",
+        "回去工作。",
+        "Huíqù gōngzuò.",
+        "Go back to work."
+      ],
+      "作": [
+        1,
+        "zuò",
+        "to make",
+        "他是作家。",
+        "Tā shì zuòjiā.",
+        "He's an author."
+      ],
+      "人": [
+        1,
+        "rén",
+        "people, person, man, human being, personality, folk",
+        "你有客人。",
+        "Nǐ yǒu kèrén.",
+        "You have a visitor."
+      ],
+      "员": [
+        3,
+        "yuán",
+        "employee",
+        "我是服务员。",
+        "Wǒ shì fúwùyuán.",
+        "I'm a waiter."
+      ],
+      "按时": [
+        4,
+        "ànshí",
+        "on time",
+        "我按时到了学校。",
+        "Wǒ ànshí dào le xuéxiào.",
+        "I arrived at school on time."
+      ],
+      "按": [
+        4,
+        "àn",
+        "to check, to control, to push, to restrain",
+        "我按时到了学校。",
+        "Wǒ ànshí dào le xuéxiào.",
+        "I arrived at school on time."
+      ],
+      "时": [
+        1,
+        "shí",
+        "time, season",
+        "好时机。",
+        "Hǎoshíjī.",
+        "Nice timing."
+      ],
+      "上班": [
+        1,
+        "shàng bān",
+        "go to work",
+        "今晚谁上班？",
+        "Jīnwǎn shuí shàngbān?",
+        "Who's working tonight?"
+      ],
+      "上": [
+        1,
+        "shàng",
+        "up",
+        "晚上好。",
+        "Wǎnshàng hǎo.",
+        "Good evening."
+      ],
+      "班": [
+        1,
+        "bān",
+        "class",
+        "今晚谁上班？",
+        "Jīnwǎn shuí shàngbān?",
+        "Who's working tonight?"
+      ],
+      "下班": [
+        1,
+        "xiàbān",
+        "to finish work",
+        "你一般几点下班？",
+        "Nǐ yìbān jǐdiǎn xiàbān?",
+        "When do you usually get off work?"
+      ],
+      "下": [
+        1,
+        "xià",
+        "down",
+        "下午好。",
+        "Xiàwǔ hǎo.",
+        "Good afternoon."
+      ],
+      "一": [
+        1,
+        "yī",
+        "one",
+        "我是第一。",
+        "Wǒ shì dìyī.",
+        "I'm first."
+      ],
+      "辆": [
+        3,
+        "liàng",
+        "(measure word for vehicles)",
+        "这辆车需要清洗。",
+        "Zhèliàng chē xūyào qīngxǐ.",
+        "This car needs washed."
+      ],
+      "那": [
+        1,
+        "nà",
+        "that",
+        "看那里。",
+        "Kàn nàlǐ.",
+        "Look there."
+      ],
+      "普": [
+        4,
+        "pǔ",
+        "widespread, universal, general",
+        "那个名字很普通吗？",
+        "Nàge míngzì hěn pǔtōng ma?",
+        "Is that a common name?"
+      ],
+      "通": [
+        4,
+        "tōng",
+        "to pass through, to open, to connect",
+        "我没通过。",
+        "Wǒ méi tōngguò.",
+        "I didn't pass."
+      ],
+      "离": [
+        2,
+        "lí",
+        "leave",
+        "他们离开了。",
+        "Tāmen líkāi le.",
+        "They left."
+      ],
+      "子": [
+        1,
+        "zi",
+        "son, child",
+        "我个子高。",
+        "Wǒ gèzi gāo.",
+        "I'm tall."
+      ],
+      "电池": [
+        5,
+        "diànchí",
+        "battery",
+        "电池要额外付钱。",
+        "Diànchí yào éwài fùqián.",
+        "You need to pay extra for the batteries."
+      ],
+      "你好": [
+        1,
+        "nǐhǎo",
+        "hello",
+        "我会给点你好东西。",
+        "Wǒhuì gěi diǎn nǐhǎo dōngxī.",
+        "I'll get you something nice."
+      ],
+      "你": [
+        1,
+        "nǐ",
+        "you",
+        "你有客人。",
+        "Nǐ yǒu kèrén.",
+        "You have a visitor."
+      ],
+      "好": [
+        1,
+        "hǎo",
+        "good",
+        "晚上好。",
+        "Wǎnshàng hǎo.",
+        "Good evening."
+      ],
+      "我": [
+        1,
+        "wǒ",
+        "I",
+        "我知道。",
+        "Wǒ zhīdào.",
+        "I know."
+      ],
+      "他": [
+        1,
+        "tā",
+        "he",
+        "他是谁？",
+        "Tā shì shéi?",
+        "Who is he?"
+      ],
+      "它": [
+        1,
+        "tā",
+        "it",
+        "它很正常。",
+        "Tā hěn zhèngcháng.",
+        "It's very normal."
+      ],
+      "我们": [
+        1,
+        "wǒmen",
+        "we, us",
+        "我们去哪儿？",
+        "Wǒmen qù nǎér?",
+        "Where do we go?"
+      ],
+      "们": [
+        1,
+        "men",
+        "plural marker for pronouns and some nouns",
+        "我们去哪儿？",
+        "Wǒmen qù nǎér?",
+        "Where do we go?"
+      ],
+      "是": [
+        1,
+        "shì",
+        "to be",
+        "我是学生。",
+        "Wǒ shì xuéshēng.",
+        "I am a student."
+      ],
+      "不": [
+        1,
+        "bù",
+        "no, not",
+        "不可能！",
+        "Bù kěnéng!",
+        "No way!"
+      ],
+      "这": [
+        1,
+        "zhè",
+        "this",
+        "这不可能！",
+        "Zhè bù kěnéng!",
+        "It can't be!"
+      ],
+      "这儿": [
+        1,
+        "zhèr",
+        "here",
+        "谁住在这儿？",
+        "Shuí zhù zài zhèér?",
+        "Who lives here?"
+      ],
+      "儿": [
+        1,
+        "ér",
+        "son, child",
+        "一会儿见！",
+        "Yīhuìer jiàn!",
+        "See you soon!"
+      ],
+      "什么": [
+        1,
+        "shénme",
+        "what",
+        "早饭吃什么？",
+        "Zǎofàn chī shénme?",
+        "What's for breakfast?"
+      ],
+      "还是": [
+        2,
+        "háishi",
+        "or",
+        "我还是个新手。",
+        "Wǒ háishì gè xīnshǒu.",
+        "I'm still a beginner."
+      ],
+      "还": [
+        1,
+        "hái",
+        "still",
+        "我还在读书。",
+        "Wǒ hái zài dúshū.",
+        "I'm still reading."
+      ],
+      "呢": [
+        1,
+        "ne",
+        "(question particle)",
+        "我很好，你呢？",
+        "Wǒ hěn hǎo, nǐ ne?",
+        "I am fine. And you?"
+      ],
+      "的": [
+        1,
+        "de",
+        "'s (possessive particle)",
+        "谁的生日？",
+        "Shuí de shēngrì?",
+        "Whose birthday is it?"
+      ],
+      "了": [
+        1,
+        "le",
+        "(particle: completed action / change of state)",
+        "我生病了。",
+        "Wǒ shēngbìng le.",
+        "I'm ill."
+      ],
+      "吧": [
+        1,
+        "ba",
+        "particle indicating polite suggestion",
+        "你没事吧？",
+        "Nǐ méishì ba?",
+        "Are you okay?"
+      ],
+      "啊": [
+        2,
+        "ā, á, ǎ, à, a",
+        "ah",
+        "真想睡过去啊。",
+        "Zhēnxiǎng shuìguòqù a.",
+        "I want to sleep."
+      ],
+      "哦": [
+        5,
+        "ò",
+        "oh (interjection indicating that one has just learned sth)",
+        "",
+        "",
+        ""
+      ],
+      "嗯": [
+        4,
+        "ǹg",
+        "interjection indicating approval, appreciation or agreement",
+        "",
+        "",
+        ""
+      ],
+      "很": [
+        1,
+        "hěn",
+        "very",
+        "很正常。",
+        "Hěn zhèngcháng.",
+        "That's normal."
+      ],
+      "太": [
+        1,
+        "tài",
+        "too",
+        "我太高兴了。",
+        "Wǒ tàigāoxìng le.",
+        "I'm so happy."
+      ],
+      "今天": [
+        1,
+        "jīntiān",
+        "today",
+        "今天下雨。",
+        "Jīntiān xiàyǔ.",
+        "It's raining today."
+      ],
+      "今": [
+        1,
+        "jīn",
+        "modern, current",
+        "今天下雨。",
+        "Jīntiān xiàyǔ.",
+        "It's raining today."
+      ],
+      "天": [
+        1,
+        "tiān",
+        "sky, heaven",
+        "后天见。",
+        "Hòutiān jiàn.",
+        "See you in two days."
+      ],
+      "现在": [
+        1,
+        "xiànzài",
+        "now",
+        "你现在是名人了。",
+        "Nǐ xiànzài shì míngrén le.",
+        "You're a celebrity now."
+      ],
+      "现": [
+        1,
+        "xiàn",
+        "to appear, to manifest",
+        "你现在是名人了。",
+        "Nǐ xiànzài shì míngrén le.",
+        "You're a celebrity now."
+      ],
+      "在": [
+        1,
+        "zài",
+        "at",
+        "我在读书。",
+        "Wǒ zài dúshū.",
+        "I'm reading."
+      ],
+      "看": [
+        1,
+        "kàn",
+        "see, watch",
+        "看那里。",
+        "Kàn nàlǐ.",
+        "Look there."
+      ],
+      "请": [
+        1,
+        "qǐng",
+        "please",
+        "请唱歌。",
+        "Qǐng chànggē.",
+        "Please sing."
+      ],
+      "说": [
+        1,
+        "shuō",
+        "to say, to speak, to tell",
+        "不要说话了。",
+        "Búyào shuōhuà le.",
+        "Stop talking."
+      ],
+      "再": [
+        1,
+        "zài",
+        "again",
+        "再给我五分钟。",
+        "Zài gěi wǒ wǔfēnzhōng.",
+        "Give me five more minutes."
+      ],
+      "遍": [
+        3,
+        "biàn",
+        "a time",
+        "请你再说一遍。",
+        "Qǐng nǐ zài shuō yí biàn.",
+        "Can you please say it again."
+      ],
+      "跟": [
+        2,
+        "gēn",
+        "heel",
+        "我不跟你要好了。",
+        "Wǒ bù gēn nǐ yào hǎo le.",
+        "I'm going to stop trying to be friendly with you."
+      ],
+      "读": [
+        1,
+        "dú",
+        "to read",
+        "我在读书。",
+        "Wǒ zài dúshū.",
+        "I'm reading."
+      ],
+      "可以": [
+        1,
+        "kěyǐ",
+        "can",
+        "我可以问你一件事吗？",
+        "Wǒ kěyǐ wèn nǐ yí jiàn shì ma?",
+        "May I ask you a question?"
+      ],
+      "可": [
+        1,
+        "kě",
+        "may, can, -able",
+        "不可能！",
+        "Bù kěnéng!",
+        "No way!"
+      ],
+      "以": [
+        1,
+        "yǐ",
+        "to use",
+        "他以前住在这儿。",
+        "Tā yǐqián zhù zài zhèér.",
+        "He used to live here."
+      ],
+      "要": [
+        1,
+        "yào",
+        "to want",
+        "只要十元！",
+        "Zhǐyào shíyuán!",
+        "It only costs $10.00!"
+      ],
+      "一样": [
+        3,
+        "yīyàng",
+        "the same",
+        "我和往常一样起得很早。",
+        "Wǒ hé wǎngcháng yīyàng qǐ de hěnzǎo.",
+        "I got up early as usual."
+      ],
+      "样": [
+        1,
+        "yàng",
+        "form, pattern, shape, style",
+        "工作怎么样？",
+        "Gōngzuò zěnmeyàng?",
+        "How's work?"
+      ],
+      "谢谢": [
+        1,
+        "xièxie",
+        "thank you",
+        "还是要说谢谢的。",
+        "Háishì yàoshuō xièxiè de.",
+        "Thanks anyway."
+      ],
+      "谢": [
+        1,
+        "xiè",
+        "to thank",
+        "还是要说谢谢的。",
+        "Háishì yàoshuō xièxiè de.",
+        "Thanks anyway."
+      ],
+      "懂": [
+        2,
+        "dǒng",
+        "understand",
+        "你不懂的词做个记号。",
+        "Nǐ bù dǒng de cí zuò gè jìhào.",
+        "Mark the words that you cannot understand."
+      ],
+      "问": [
+        1,
+        "wèn",
+        "ask",
+        "请问你的名字是？",
+        "Qǐngwèn nǐ de míngzì shì?",
+        "May I have your name, please?"
+      ],
+      "用": [
+        3,
+        "yòng",
+        "to use",
+        "真的有用。",
+        "Zhēnde yǒuyòng.",
+        "It really works."
+      ],
+      "走": [
+        2,
+        "zǒu",
+        "to walk",
+        "他走路很快。",
+        "Tā zǒulù hěnkuài.",
+        "He walks fast."
+      ],
+      "来": [
+        1,
+        "lái",
+        "come",
+        "请回来。",
+        "Qǐng huílái.",
+        "Turn back, please."
+      ],
+      "个": [
+        1,
+        "gè",
+        "(general measure word)",
+        "我个子高。",
+        "Wǒ gèzi gāo.",
+        "I'm tall."
+      ],
+      "词": [
+        2,
+        "cí",
+        "word",
+        "汉语的词语很多。",
+        "Hànyǔ de cíyǔ hěn duō.",
+        "The Chinese language has many words and expressions."
+      ],
+      "听说": [
+        3,
+        "tīngshuō",
+        "to hear (sth said)",
+        "我听说你病了。",
+        "Wǒ tīngshuō nǐ bìng le.",
+        "I've heard you've been sick."
+      ],
+      "听": [
+        1,
+        "tīng",
+        "to listen, to hear",
+        "我没听见。",
+        "Wǒ méi tīngjiàn.",
+        "I didn't hear it."
+      ],
+      "后面": [
+        2,
+        "hòumiàn",
+        "behind",
+        "我就在你后面。",
+        "Wǒ jiù zài nǐ hòumiàn.",
+        "I was right behind you."
+      ],
+      "后": [
+        1,
+        "hòu",
+        "after",
+        "后天见。",
+        "Hòutiān jiàn.",
+        "See you in two days."
+      ],
+      "面": [
+        1,
+        "miàn",
+        "face",
+        "我吃面包。",
+        "Wǒ chī miànbāo.",
+        "I eat bread."
+      ],
+      "课": [
+        1,
+        "kè",
+        "class",
+        "您几点下课？",
+        "Nín jǐdiǎn xiàkè?",
+        "What time does your class end?"
+      ],
+      "哪个": [
+        1,
+        "nǎge",
+        "which",
+        "哪个包是你的？",
+        "Nǎge bāoshì nǐ de?",
+        "Which bag is yours?"
+      ],
+      "哪": [
+        1,
+        "nǎ",
+        "which",
+        "你去哪儿？",
+        "Nǐ qù nǎér?",
+        "Where are you going?"
+      ],
+      "都": [
+        1,
+        "dū, dōu",
+        "all",
+        "那些狗都很大。",
+        "Nàxiē gǒu dōu hěndà.",
+        "Those dogs are big."
+      ],
+      "学会": [
+        6,
+        "xuéhuì",
+        "to learn",
+        "你什么时候学会游泳的？",
+        "Nǐ shénme shíhòu xuéhuì yóuyǒng de?",
+        "When did you learn to swim?"
+      ],
+      "学": [
+        1,
+        "xué",
+        "learning, knowledge, science",
+        "好好学习。",
+        "Hǎohǎoxuéxí.",
+        "Study hard."
+      ],
+      "会": [
+        1,
+        "huì",
+        "can",
+        "一会儿见！",
+        "Yīhuìer jiàn!",
+        "See you soon!"
+      ],
+      "一起": [
+        2,
+        "yīqǐ",
+        "together",
+        "我喜欢和你一起吃早饭。",
+        "Wǒ xǐhuān hé nǐ yìqǐ chī zǎofàn.",
+        "I like having breakfast with you."
+      ],
+      "起": [
+        1,
+        "qǐ",
+        "to begin, to initiate",
+        "对不起。",
+        "Duìbùqǐ.",
+        "Excuse me."
+      ],
+      "多": [
+        1,
+        "duō",
+        "many",
+        "你多吃苹果。",
+        "Nǐ duō chī píngguǒ.",
+        "Eat more apples."
+      ],
+      "这些": [
+        1,
+        "zhèxiē",
+        "these",
+        "这些都是你不得不做的吗？",
+        "Zhèxiē dōu shì nǐ bùdébú zuò de ma?",
+        "Is that all you have to do?"
+      ],
+      "些": [
+        1,
+        "xiē",
+        "some",
+        "我有些事。",
+        "Wǒ yǒuxiē shì.",
+        "I have things to take care of."
+      ],
+      "开": [
+        1,
+        "kāi",
+        "to open, to start, to operate",
+        "我们正在开会。",
+        "Wǒmen zhèng zài kāihuì.",
+        "We're in a meeting right now."
+      ],
+      "放": [
+        3,
+        "fàng",
+        "put",
+        "放飞鸟儿。",
+        "Fàngfēi niǎoér.",
+        "Let the bird fly away."
+      ],
+      "哪儿": [
+        1,
+        "nǎ'er",
+        "where",
+        "你去哪儿？",
+        "Nǐ qù nǎér?",
+        "Where are you going?"
+      ],
+      "去": [
+        1,
+        "qù",
+        "to go",
+        "去了超市。",
+        "Qù le chāoshì.",
+        "I went to the supermarket."
+      ],
+      "三": [
+        1,
+        "sān",
+        "three",
+        "他有三个哥哥。",
+        "Tā yǒu sāngè gēgē.",
+        "He has three brothers."
+      ],
+      "师傅": [
+        4,
+        "shīfu",
+        "master",
+        "",
+        "",
+        ""
+      ],
+      "师": [
+        1,
+        "shī",
+        "teacher, professional, master",
+        "他是老师。",
+        "Tā shì lǎoshī.",
+        "He is a teacher."
+      ],
+      "傅": [
+        4,
+        "fù",
+        "tutor, teacher",
+        "",
+        "",
+        ""
+      ],
+      "徒": [
+        6,
+        "tú",
+        "disciple, follower",
+        "",
+        "",
+        ""
+      ],
+      "充": [
+        5,
+        "chōng",
+        "to fill, to supply",
+        "他充满活力。",
+        "Tā chōngmǎnhuólì.",
+        "He is full of energy."
+      ],
+      "口": [
+        1,
+        "kǒu",
+        "mouth",
+        "他站在门口。",
+        "Tā zhàn zài ménkǒu.",
+        "He's standing at the entrance."
+      ],
+      "货": [
+        4,
+        "huò",
+        "products, merchandise",
+        "自动售货机在那边。",
+        "Zìdòngshòuhuòjī zài nàbiān.",
+        "The vending machines are over there."
+      ],
+      "架": [
+        5,
+        "jià",
+        "frame, rack, stand",
+        "他们俩又在吵架了。",
+        "Tāmen liǎ yòu zài chǎojià le.",
+        "Those two are arguing again."
+      ],
+      "系": [
+        1,
+        "xì",
+        "system",
+        "没关系。",
+        "Méiguānxì.",
+        "It's OK."
+      ],
+      "统": [
+        5,
+        "tǒng",
+        "to govern, to command",
+        "他被选为总统。",
+        "Tā bèixuǎnwèi zǒngtǒng.",
+        "He was elected president."
+      ],
+      "外": [
+        1,
+        "wài",
+        "outer",
+        "外面在下雪。",
+        "Wàimiàn zài xiàxuě.",
+        "It's snowing outside."
+      ],
+      "壳": [
+        7,
+        "ké",
+        "casing, husk, shell",
+        "蛋壳容易破碎。",
+        "Dànké róngyì pòsuì.",
+        "The shell of an egg is easily broken."
+      ],
+      "语": [
+        1,
+        "yǔ",
+        "words, language",
+        "他也学习汉语。",
+        "Tā yě xuéxí hànyǔ.",
+        "He studies Chinese as well."
+      ],
+      "料": [
+        3,
+        "liào",
+        "ingredients, materials",
+        "他买了一瓶饮料。",
+        "Tā mǎile yì píng yǐnliào.",
+        "He bought a bottle of something to drink."
+      ],
+      "库": [
+        5,
+        "kù",
+        "armory, treasury, warehouse",
+        "车在车库里。",
+        "Chē zài chēkùlǐ.",
+        "The car is in the garage."
+      ],
+      "车间": [
+        7,
+        "chējiān",
+        "workshop",
+        "我把车库改造成车间使用。",
+        "Wǒ bǎ chēkù gǎizào chéng chējiān shǐyòng.",
+        "I adapted the garage for use as a workshop."
+      ],
+      "间": [
+        1,
+        "jiān",
+        "between, among",
+        "我有时间。",
+        "Wǒ yǒu shíjiān.",
+        "I have time."
+      ],
+      "王": [
+        6,
+        "wáng",
+        "king, ruler",
+        "喂，你好，请问是王老师吗？",
+        "Wéi, nǐ hǎo, qǐngwèn shì Wáng lǎoshī ma?",
+        "Hello. Is this Teacher Wang?"
+      ],
+      "明": [
+        1,
+        "míng",
+        "bright, clear",
+        "不明白。",
+        "Bù míngbái.",
+        "I don't understand."
+      ],
+      "马": [
+        3,
+        "mǎ",
+        "horse",
+        "你最好马上走。",
+        "Nǐ zuìhǎo mǎshàng zǒu.",
+        "You'd better leave now."
+      ],
+      "丁": [
+        7,
+        "dīng",
+        "male adult",
+        "园丁后来发现就是凶手。",
+        "Yuándīng hòulái fāxiàn jiùshì xiōngshǒu.",
+        "The gardener turned out to be the murderer."
+      ],
+      "小": [
+        1,
+        "xiǎo",
+        "small",
+        "他小看女人。",
+        "Tā xiǎokàn nǚrén.",
+        "He looks down on women."
+      ],
+      "龙": [
+        5,
+        "lóng",
+        "dragon",
+        "水龙头在滴水。",
+        "Shuǐlóngtóu zài dīshuǐ.",
+        "The faucet is leaking."
+      ],
+      "电话": [
+        1,
+        "diànhuà",
+        "telephone",
+        "打电话回家！",
+        "Dǎdiànhuà huíjiā!",
+        "Call home!"
+      ],
+      "电脑": [
+        1,
+        "diànnǎo",
+        "computer",
+        "我小时候的时候还没有电脑。",
+        "Wǒ xiǎoshíhòu de shíhòu hái méiyǒu diànnǎo.",
+        "We didn't have computers when I was growing up."
+      ],
+      "电视": [
+        1,
+        "diànshì",
+        "television",
+        "我弟弟在看电视。",
+        "Wǒ dìdi zài kàndiànshì.",
+        "My brother is watching TV."
+      ],
+      "电影": [
+        1,
+        "diànyǐng",
+        "film, movie",
+        "我们去看电影吧！",
+        "Wǒmen qù kàn diànyǐngba!",
+        "Let's go to the movies."
+      ],
+      "打电话": [
+        1,
+        "dǎdiànhuà",
+        "make a phone call",
+        "打电话回家！",
+        "Dǎdiànhuà huíjiā!",
+        "Call home!"
+      ],
+      "电影院": [
+        1,
+        "diànyǐngyuàn",
+        "cinema",
+        "我们去电影院怎么样？",
+        "Wǒmen qù diànyǐngyuàn zěnmeyàng?",
+        "How about going to the movies?"
+      ],
+      "电梯": [
+        3,
+        "diàntī",
+        "elevator",
+        "我乘电梯上三楼。",
+        "Wǒ chéng diàntī shàngsānlóu.",
+        "I took the elevator to the third floor."
+      ],
+      "电子书": [
+        3,
+        "diànzǐshū",
+        "electronic book",
+        "我在手机上看电子书。",
+        "Wǒ zài shǒujī shang kàn diànzǐshū.",
+        "I read e-books on my phone."
+      ],
+      "运动": [
+        2,
+        "yùndòng",
+        "(physical) exercise",
+        "他爱做运动。",
+        "Tā ài zuò yùndòng.",
+        "He loves exercising."
+      ],
+      "动物": [
+        3,
+        "dòngwù",
+        "animal",
+        "公园里有动物园吗？",
+        "Gōngyuán lǐ yǒu dòngwùyuán ma?",
+        "Is there a zoo in the park?"
+      ],
+      "动物园": [
+        3,
+        "dòngwùyuán",
+        "zoo",
+        "公园里有动物园吗？",
+        "Gōngyuán lǐ yǒu dòngwùyuán ma?",
+        "Is there a zoo in the park?"
+      ],
+      "运动会": [
+        3,
+        "yùndònghuì",
+        "sports competition",
+        "学校下个月开运动会。",
+        "Xuéxiào xià ge yuè kāi yùndònghuì.",
+        "The school holds its sports meet next month."
+      ],
+      "运动员": [
+        3,
+        "yùndòngyuán",
+        "athlete",
+        "我一直想成为一名职业篮球运动员。",
+        "Wǒ yìzhí xiǎng chéngwéi yīmíng zhíyè lánqiú yùndòngyuán.",
+        "I've always wanted to be a professional basketball player."
+      ],
+      "努力": [
+        3,
+        "nǔlì",
+        "make great effort",
+        "我在努力。",
+        "Wǒ zài nǔlì.",
+        "I'm working on doing that."
+      ],
+      "火车": [
+        1,
+        "huǒchē",
+        "train",
+        "你坐火车去吗？",
+        "Nǐ zuòhuǒchē qù ma?",
+        "Will you go by train?"
+      ],
+      "开车": [
+        1,
+        "kāichē",
+        "to drive a car (or train etc)",
+        "要小心开车。",
+        "Yào xiǎoxīn kāichē.",
+        "Drive carefully."
+      ],
+      "出租车": [
+        1,
+        "chūzūchē",
+        "taxi, cab",
+        "出租车到了。",
+        "Chūzūchē dào le.",
+        "The taxi's here."
+      ],
+      "车站": [
+        2,
+        "chēzhàn",
+        "rail station",
+        "这是火车站吗？",
+        "Zhèshì huǒchēzhàn ma?",
+        "Is that the railroad station?"
+      ],
+      "打车": [
+        2,
+        "dǎchē",
+        "to take a taxi (in town)",
+        "太晚了，我们打车回家吧。",
+        "Tài wǎn le, wǒmen dǎchē huí jiā ba.",
+        "It is late. Let us take a taxi home."
+      ],
+      "公交车": [
+        2,
+        "gōngjiāochē",
+        "public transport vehicle",
+        "我在公交车上睡觉了。",
+        "Wǒ zài gōngjiāochē shàng shuìjiào le.",
+        "I slept on the bus."
+      ],
+      "自行车": [
+        3,
+        "zìxíngchē",
+        "bike",
+        "这是我的自行车。",
+        "Zhè shì wǒ de zìxíngchē.",
+        "It's my bicycle."
+      ],
+      "可能": [
+        2,
+        "kěnéng",
+        "possible",
+        "不可能！",
+        "Bù kěnéng!",
+        "No way!"
+      ],
+      "只能": [
+        3,
+        "zhǐnéng",
+        "can only",
+        "我只能给你十分钟。",
+        "Wǒ zhǐnéng gěi nǐ shífēnzhōng.",
+        "I can only give you ten minutes."
+      ],
+      "飞机": [
+        1,
+        "fēijī",
+        "airplane",
+        "飞机九点起飞。",
+        "Fēijī jiǔ diǎn qǐfēi.",
+        "The airplane departs at 9:00."
+      ],
+      "手机": [
+        1,
+        "shǒujī",
+        "mobile (cell) phone",
+        "给我你的手机。",
+        "Gěi wǒ nǐ de shǒujī.",
+        "Give me your phone."
+      ],
+      "机场": [
+        2,
+        "jīchǎng",
+        "airport",
+        "我现在在机场。",
+        "Wǒ xiànzài zài jīchǎng.",
+        "I'm at the airport now."
+      ],
+      "机票": [
+        2,
+        "jīpiào",
+        "plane ticket",
+        "去北京的机票太贵了。",
+        "Qù Běijīng de jīpiào tài guì le.",
+        "Plane tickets to Beijing are too expensive."
+      ],
+      "耳机": [
+        3,
+        "ěrjī",
+        "headphones",
+        "他戴着耳机听音乐。",
+        "Tā dàizhe ěrjī tīng yīnyuè.",
+        "He listens to music with headphones on."
+      ],
+      "关机": [
+        3,
+        "guānjī",
+        "to turn off (a machine or device)",
+        "上课前请把手机关机。",
+        "Shàng kè qián qǐng bǎ shǒujī guānjī.",
+        "Please turn your phone off before class."
+      ],
+      "机会": [
+        3,
+        "jīhuì",
+        "chance",
+        "没人给我们机会。",
+        "Méirén gěi wǒmen jīhuì.",
+        "Nobody gave us a chance."
+      ],
+      "开机": [
+        3,
+        "kāijī",
+        "to start an engine",
+        "电脑开机要等一分钟。",
+        "Diànnǎo kāijī yào děng yì fēnzhōng.",
+        "The computer takes a minute to start up."
+      ],
+      "新年": [
+        3,
+        "xīnnián",
+        "New Year",
+        "新年快乐！",
+        "Xīnnián kuàilè!",
+        "Happy New Year!"
+      ],
+      "新闻": [
+        3,
+        "xīnwén",
+        "news",
+        "你听到新闻了吗？",
+        "Nǐ tīngdào xīnwén le ma?",
+        "Did you hear the news?"
+      ],
+      "新鲜": [
+        3,
+        "xīnxiān",
+        "fresh (experience, food, etc.)",
+        "面包不新鲜。",
+        "Miànbāo bù xīnxiān.",
+        "The bread isn't fresh."
+      ],
+      "合适": [
+        3,
+        "héshì",
+        "suitable",
+        "这实在不合适。",
+        "Zhè shízài bù héshì.",
+        "It is highly improper."
+      ],
+      "出发": [
+        3,
+        "chūfā",
+        "start out",
+        "火车6点出发。",
+        "Huǒchē 6diǎn chūfā.",
+        "The train leaves at six."
+      ],
+      "发烧": [
+        3,
+        "fāshāo",
+        "have a fever",
+        "你没发烧。",
+        "Nǐ méi fāshāo.",
+        "You have no fever."
+      ],
+      "发生": [
+        3,
+        "fāshēng",
+        "happen",
+        "那有时会发生。",
+        "Nà yǒushí huì fāshēng.",
+        "Sometimes it happens."
+      ],
+      "发现": [
+        3,
+        "fāxiàn",
+        "discover",
+        "你家很容易发现。",
+        "Nǐjiā hěn róngyì fāxiàn.",
+        "Your house was easy to find."
+      ],
+      "发展": [
+        3,
+        "fāzhǎn",
+        "develop",
+        "最近科技发展很快。",
+        "Zuìjìn kējì fāzhǎn hěn kuài.",
+        "Technology has recently been developing rapidly."
+      ],
+      "沙发": [
+        3,
+        "shāfā",
+        "sofa",
+        "我们想买张沙发。",
+        "Wǒmen xiǎng mǎi zhāng shāfā.",
+        "We would like to buy a sofa."
+      ],
+      "头发": [
+        3,
+        "tóufa",
+        "hair (on the head)",
+        "你的头发很漂亮。",
+        "Nǐ de tóufà hěnpiàoliàng.",
+        "Your hair is pretty."
+      ],
+      "工作": [
+        1,
+        "gōngzuò",
+        "work",
+        "回去工作。",
+        "Huíqù gōngzuò.",
+        "Go back to work."
+      ],
+      "工作日": [
+        3,
+        "gōngzuòrì",
+        "workday",
+        "星期天不是我的工作日。",
+        "Xīngqītiān búshì wǒ de gōngzuòrì.",
+        "Sunday is not a workday for me."
+      ],
+      "作业": [
+        3,
+        "zuòyè",
+        "school assignment",
+        "没写作业。",
+        "Méi xiě zuòyè.",
+        "I didn't do the homework."
+      ],
+      "对不起": [
+        1,
+        "duìbuqǐ",
+        "sorry",
+        "对不起。",
+        "Duìbùqǐ.",
+        "Excuse me."
+      ],
+      "对话": [
+        3,
+        "duìhuà",
+        "dialogue",
+        "我没有参与对话。",
+        "Wǒ méiyǒu cānyù duìhuà.",
+        "I did not participate in the dialog."
+      ]
+    },
+    "chain": {
+      "电": [
+        [
+          "电话",
+          1,
+          "diànhuà",
+          "telephone"
+        ],
+        [
+          "电脑",
+          1,
+          "diànnǎo",
+          "computer"
+        ],
+        [
+          "电视",
+          1,
+          "diànshì",
+          "television"
+        ],
+        [
+          "电影",
+          1,
+          "diànyǐng",
+          "film, movie"
+        ],
+        [
+          "打电话",
+          1,
+          "dǎdiànhuà",
+          "make a phone call"
+        ],
+        [
+          "电影院",
+          1,
+          "diànyǐngyuàn",
+          "cinema"
+        ],
+        [
+          "电梯",
+          3,
+          "diàntī",
+          "elevator"
+        ],
+        [
+          "电子书",
+          3,
+          "diànzǐshū",
+          "electronic book"
+        ]
+      ],
+      "动": [
+        [
+          "运动",
+          2,
+          "yùndòng",
+          "(physical) exercise"
+        ],
+        [
+          "动物",
+          3,
+          "dòngwù",
+          "animal"
+        ],
+        [
+          "动物园",
+          3,
+          "dòngwùyuán",
+          "zoo"
+        ],
+        [
+          "运动会",
+          3,
+          "yùndònghuì",
+          "sports competition"
+        ],
+        [
+          "运动员",
+          3,
+          "yùndòngyuán",
+          "athlete"
+        ]
+      ],
+      "力": [
+        [
+          "努力",
+          3,
+          "nǔlì",
+          "make great effort"
+        ]
+      ],
+      "车": [
+        [
+          "火车",
+          1,
+          "huǒchē",
+          "train"
+        ],
+        [
+          "开车",
+          1,
+          "kāichē",
+          "to drive a car (or train etc)"
+        ],
+        [
+          "出租车",
+          1,
+          "chūzūchē",
+          "taxi, cab"
+        ],
+        [
+          "车站",
+          2,
+          "chēzhàn",
+          "rail station"
+        ],
+        [
+          "打车",
+          2,
+          "dǎchē",
+          "to take a taxi (in town)"
+        ],
+        [
+          "公交车",
+          2,
+          "gōngjiāochē",
+          "public transport vehicle"
+        ],
+        [
+          "汽车",
+          3,
+          "qìchē",
+          "car"
+        ],
+        [
+          "自行车",
+          3,
+          "zìxíngchē",
+          "bike"
+        ]
+      ],
+      "能": [
+        [
+          "可能",
+          2,
+          "kěnéng",
+          "possible"
+        ],
+        [
+          "只能",
+          3,
+          "zhǐnéng",
+          "can only"
+        ]
+      ],
+      "机": [
+        [
+          "飞机",
+          1,
+          "fēijī",
+          "airplane"
+        ],
+        [
+          "手机",
+          1,
+          "shǒujī",
+          "mobile (cell) phone"
+        ],
+        [
+          "机场",
+          2,
+          "jīchǎng",
+          "airport"
+        ],
+        [
+          "机票",
+          2,
+          "jīpiào",
+          "plane ticket"
+        ],
+        [
+          "耳机",
+          3,
+          "ěrjī",
+          "headphones"
+        ],
+        [
+          "关机",
+          3,
+          "guānjī",
+          "to turn off (a machine or device)"
+        ],
+        [
+          "机会",
+          3,
+          "jīhuì",
+          "chance"
+        ],
+        [
+          "开机",
+          3,
+          "kāijī",
+          "to start an engine"
+        ]
+      ],
+      "池": [],
+      "油": [],
+      "源": [],
+      "新": [
+        [
+          "新年",
+          3,
+          "xīnnián",
+          "New Year"
+        ],
+        [
+          "新闻",
+          3,
+          "xīnwén",
+          "news"
+        ],
+        [
+          "新鲜",
+          3,
+          "xīnxiān",
+          "fresh (experience, food, etc.)"
+        ]
+      ],
+      "混": [],
+      "合": [
+        [
+          "合适",
+          3,
+          "héshì",
+          "suitable"
+        ]
+      ],
+      "插": [],
+      "式": [],
+      "驱": [],
+      "发": [
+        [
+          "出发",
+          3,
+          "chūfā",
+          "start out"
+        ],
+        [
+          "发烧",
+          3,
+          "fāshāo",
+          "have a fever"
+        ],
+        [
+          "发生",
+          3,
+          "fāshēng",
+          "happen"
+        ],
+        [
+          "发现",
+          3,
+          "fāxiàn",
+          "discover"
+        ],
+        [
+          "发展",
+          3,
+          "fāzhǎn",
+          "develop"
+        ],
+        [
+          "沙发",
+          3,
+          "shāfā",
+          "sofa"
+        ],
+        [
+          "头发",
+          3,
+          "tóufa",
+          "hair (on the head)"
+        ]
+      ],
+      "工": [
+        [
+          "工作",
+          1,
+          "gōngzuò",
+          "work"
+        ],
+        [
+          "工作日",
+          3,
+          "gōngzuòrì",
+          "workday"
+        ]
+      ],
+      "作": [
+        [
+          "工作",
+          1,
+          "gōngzuò",
+          "work"
+        ],
+        [
+          "作业",
+          3,
+          "zuòyè",
+          "school assignment"
+        ],
+        [
+          "工作日",
+          3,
+          "gōngzuòrì",
+          "workday"
+        ]
+      ],
+      "对": [
+        [
+          "对不起",
+          1,
+          "duìbuqǐ",
+          "sorry"
+        ],
+        [
+          "对话",
+          3,
+          "duìhuà",
+          "dialogue"
+        ]
+      ],
+      "也": [],
+      "叫": [],
+      "和": []
+    },
+    "meta": {
+      "attribution": "The complete HSK 3.0 syllabus by Gushi (https://gushichinese.com/hsk-3.0/downloads), CC BY-SA 4.0",
+      "page": "https://gushichinese.com/hsk-3.0/downloads",
+      "license": "CC BY-SA 4.0 — https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+  },
+  "assets": {
+    "marble": null,
+    "note": "真实新能源汽车车间 SPZ 尚缺；未引用其他场景代替。",
+    "shelf": [
+      {
+        "bay": 0,
+        "w": "制动",
+        "note": "自编试课 · 待教师审阅"
+      },
+      {
+        "bay": 1,
+        "w": "动能",
+        "note": "自编试课 · 待教师审阅"
+      },
+      {
+        "bay": 2,
+        "w": "能量回收",
+        "note": "自编试课 · 待教师审阅"
+      }
+    ],
+    "shelfBayNames": [
+      "制动",
+      "动能",
+      "能量回收"
+    ]
+  },
+  "pools": {
+    "newWords": [
+      {
+        "id": "new-0",
+        "commands": [
+          {
+            "op": "action",
+            "name": "focus",
+            "args": {
+              "part": "motor"
+            }
+          },
+          {
+            "op": "action",
+            "name": "camera",
+            "args": {
+              "view": "part",
+              "seconds": 0.8,
+              "part": "motor"
+            }
+          },
+          {
+            "op": "action",
+            "name": "compare",
+            "args": {
+              "word": "制动"
+            }
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "用制动让汽车慢下来。",
+              "en": "Braking makes the car slow down.",
+              "teacher": "自编例句；示意不表示所有车型的控制策略。 用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-repeat-0",
+            "cfg": {
+              "stage": "认",
+              "task": "跟读 · Repeat: 制动",
+              "options": [
+                "✓ 我读了 · I said it"
+              ],
+              "answer": "制动",
+              "speechTarget": "制动"
+            },
+            "check": {
+              "type": "word",
+              "target": "制动",
+              "others": [],
+              "alts": [],
+              "selfReport": "✓ 我读了 · I said it"
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "很好！"
+              },
+              {
+                "msg": "再听一遍：制动"
+              }
+            ]
+          },
+          {
+            "op": "ask",
+            "id": "l5-choose-0",
+            "cfg": {
+              "stage": "辨",
+              "task": "让汽车速度变慢的过程叫什么？",
+              "options": [
+                "制动",
+                "动能"
+              ],
+              "answer": "制动"
+            },
+            "check": {
+              "type": "word",
+              "target": "制动",
+              "others": [
+                "动能"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "对！"
+              },
+              {
+                "msg": "看一看车，再选一次。"
+              }
+            ]
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "请你说：制动。",
+              "en": "Please say: 制动",
+              "teacher": ""
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-say-0",
+            "cfg": {
+              "stage": "说",
+              "task": "说出这个词，让示意装置动起来。",
+              "answer": "制动"
+            },
+            "check": {
+              "type": "word",
+              "target": "制动",
+              "others": [
+                "动能"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "示意装置动起来了。"
+              },
+              {
+                "msg": "可以先听示范，再说一次。"
+              }
+            ],
+            "attempt": [
+              {
+                "op": "if",
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "then": [
+                  {
+                    "op": "action",
+                    "name": "animate",
+                    "args": {
+                      "part": "motor"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "new-1",
+        "commands": [
+          {
+            "op": "action",
+            "name": "focus",
+            "args": {
+              "part": "motor"
+            }
+          },
+          {
+            "op": "action",
+            "name": "camera",
+            "args": {
+              "view": "part",
+              "seconds": 0.8,
+              "part": "motor"
+            }
+          },
+          {
+            "op": "action",
+            "name": "compare",
+            "args": {
+              "word": "动能"
+            }
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "运动的汽车有动能。",
+              "en": "A moving car has kinetic energy.",
+              "teacher": "自编例句；示意不表示所有车型的控制策略。 用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-repeat-1",
+            "cfg": {
+              "stage": "认",
+              "task": "跟读 · Repeat: 动能",
+              "options": [
+                "✓ 我读了 · I said it"
+              ],
+              "answer": "动能",
+              "speechTarget": "动能"
+            },
+            "check": {
+              "type": "word",
+              "target": "动能",
+              "others": [],
+              "alts": [],
+              "selfReport": "✓ 我读了 · I said it"
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "很好！"
+              },
+              {
+                "msg": "再听一遍：动能"
+              }
+            ]
+          },
+          {
+            "op": "ask",
+            "id": "l5-choose-1",
+            "cfg": {
+              "stage": "辨",
+              "task": "运动的汽车有什么能量？",
+              "options": [
+                "动能",
+                "制动"
+              ],
+              "answer": "动能"
+            },
+            "check": {
+              "type": "word",
+              "target": "动能",
+              "others": [
+                "制动"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "对！"
+              },
+              {
+                "msg": "看一看车，再选一次。"
+              }
+            ]
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "请你说：动能。",
+              "en": "Please say: 动能",
+              "teacher": ""
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-say-1",
+            "cfg": {
+              "stage": "说",
+              "task": "说出这个词，让示意装置动起来。",
+              "answer": "动能"
+            },
+            "check": {
+              "type": "word",
+              "target": "动能",
+              "others": [
+                "制动"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "示意装置动起来了。"
+              },
+              {
+                "msg": "可以先听示范，再说一次。"
+              }
+            ],
+            "attempt": [
+              {
+                "op": "if",
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "then": [
+                  {
+                    "op": "action",
+                    "name": "animate",
+                    "args": {
+                      "part": "motor"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "new-2",
+        "commands": [
+          {
+            "op": "action",
+            "name": "focus",
+            "args": {
+              "part": "battery"
+            }
+          },
+          {
+            "op": "action",
+            "name": "camera",
+            "args": {
+              "view": "part",
+              "seconds": 0.8,
+              "part": "battery"
+            }
+          },
+          {
+            "op": "action",
+            "name": "compare",
+            "args": {
+              "word": "能量回收"
+            }
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "制动时，可以回收一部分能量。",
+              "en": "When braking, some energy can be recovered.",
+              "teacher": "自编例句；示意不表示所有车型的控制策略。 用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-repeat-2",
+            "cfg": {
+              "stage": "认",
+              "task": "跟读 · Repeat: 能量回收",
+              "options": [
+                "✓ 我读了 · I said it"
+              ],
+              "answer": "能量回收",
+              "speechTarget": "能量回收"
+            },
+            "check": {
+              "type": "word",
+              "target": "能量回收",
+              "others": [],
+              "alts": [],
+              "selfReport": "✓ 我读了 · I said it"
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "很好！"
+              },
+              {
+                "msg": "再听一遍：能量回收"
+              }
+            ]
+          },
+          {
+            "op": "ask",
+            "id": "l5-choose-2",
+            "cfg": {
+              "stage": "辨",
+              "task": "把部分动能转化成电能的过程叫什么？",
+              "options": [
+                "能量回收",
+                "动能"
+              ],
+              "answer": "能量回收"
+            },
+            "check": {
+              "type": "word",
+              "target": "能量回收",
+              "others": [
+                "动能"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "对！"
+              },
+              {
+                "msg": "看一看车，再选一次。"
+              }
+            ]
+          },
+          {
+            "op": "say",
+            "who": "wang",
+            "line": {
+              "zh": "请你说：能量回收。",
+              "en": "Please say: 能量回收",
+              "teacher": ""
+            }
+          },
+          {
+            "op": "ask",
+            "id": "l5-say-2",
+            "cfg": {
+              "stage": "说",
+              "task": "说出这个词，让示意装置动起来。",
+              "answer": "能量回收"
+            },
+            "check": {
+              "type": "word",
+              "target": "能量回收",
+              "others": [
+                "动能"
+              ],
+              "alts": []
+            },
+            "feedback": [
+              {
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "msg": "示意装置动起来了。"
+              },
+              {
+                "msg": "可以先听示范，再说一次。"
+              }
+            ],
+            "attempt": [
+              {
+                "op": "if",
+                "when": {
+                  "path": "result.ok",
+                  "is": true
+                },
+                "then": [
+                  {
+                    "op": "action",
+                    "name": "animate",
+                    "args": {
+                      "part": "battery"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "stations": [
+    {
+      "id": "intro",
+      "name": "入门",
+      "commands": [
+        {
+          "op": "action",
+          "name": "scene",
+          "args": {
+            "xray": false,
+            "labels": false,
+            "wang": "lift",
+            "dragon": false,
+            "stamp": false
+          }
+        },
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "overview",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "今天我们学习能量回收。",
+            "en": "Today we learn about energy recovery.",
+            "teacher": "自编试课，待教师与专业教师审阅，不是教材原文。"
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "先看，再说，最后教小龙。",
+            "en": "Watch, then speak, then teach Xiaolong.",
+            "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "a",
+      "name": "① 看车学词",
+      "commands": [
+        {
+          "op": "action",
+          "name": "scene",
+          "args": {
+            "wang": "lift",
+            "xray": true,
+            "labels": false
+          }
+        },
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "car",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "pool",
+          "id": "newWords"
+        },
+        {
+          "op": "if",
+          "when": {
+            "path": "state.plugged",
+            "is": false
+          },
+          "then": [
+            {
+              "op": "say",
+              "who": "wang",
+              "line": {
+                "zh": "我们看一看，再练习。",
+                "en": "Let us look, then practise.",
+                "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+              }
+            },
+            {
+              "op": "ask",
+              "id": "l5-plug",
+              "cfg": {
+                "stage": "动作",
+                "task": "选择插电状态；两种状态都能完成本课。",
+                "options": [
+                  "🔌 插电",
+                  "先不插（对比用）"
+                ]
+              },
+              "check": {
+                "type": "choice",
+                "mode": "contains",
+                "answers": [
+                  "插电",
+                  "先不插"
+                ]
+              },
+              "feedback": [
+                {
+                  "when": {
+                    "all": [
+                      {
+                        "path": "result.ok",
+                        "is": true
+                      },
+                      {
+                        "path": "normalized",
+                        "contains": "先不插"
+                      }
+                    ]
+                  },
+                  "msg": "保持未插电。"
+                },
+                {
+                  "when": {
+                    "path": "result.ok",
+                    "is": true
+                  },
+                  "msg": "开关已接通；自编例句仍标明自编。"
+                },
+                {
+                  "msg": "请点一个选项。"
+                }
+              ],
+              "after": [
+                {
+                  "op": "if",
+                  "when": {
+                    "not": {
+                      "path": "normalized",
+                      "contains": "先不插"
+                    }
+                  },
+                  "then": [
+                    {
+                      "op": "action",
+                      "name": "plug",
+                      "args": {
+                        "value": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "if",
+          "when": {
+            "path": "state.plugged",
+            "is": true
+          },
+          "then": [
+            {
+              "op": "say",
+              "who": "wang",
+              "line": {
+                "zh": "我们来练习这个句子。",
+                "en": "Let us practise this sentence.",
+                "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+              }
+            }
+          ],
+          "else": [
+            {
+              "op": "say",
+              "who": "wang",
+              "line": {
+                "zh": "我们来练习这个句子。",
+                "en": "Let us practise this sentence.",
+                "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "b",
+      "name": "② 把……转化成……",
+      "commands": [
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "board",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "能量回收系统把一部分动能转化成电能。",
+            "en": "The system converts part of the kinetic energy into electrical energy.",
+            "teacher": "目标句式：把＋对象＋转化成＋结果；专业词单独标注，不宣称严格HSK2。"
+          }
+        },
+        {
+          "op": "ask",
+          "id": "l5-grammar-recognize",
+          "cfg": {
+            "stage": "认",
+            "task": "转化后的能量是什么？",
+            "options": [
+              "电能",
+              "动能"
+            ],
+            "answer": "电能"
+          },
+          "check": {
+            "type": "word",
+            "target": "电能",
+            "others": [
+              "动能"
+            ],
+            "alts": []
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "对，结果是电能。"
+            },
+            {
+              "msg": "再听一次：把一部分动能转化成电能。"
+            }
+          ]
+        },
+        {
+          "op": "ask",
+          "id": "l5-grammar-choice",
+          "cfg": {
+            "stage": "辨",
+            "task": "选择说明能量回收方向的一句。",
+            "options": [
+              "能量回收系统把一部分动能转化成电能。",
+              "能量回收系统把一部分电能转化成动能。"
+            ],
+            "answer": "能量回收系统把一部分动能转化成电能。"
+          },
+          "check": {
+            "type": "choice",
+            "answers": [
+              "能量回收系统把一部分动能转化成电能。"
+            ]
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "对，制动时的能量回收方向是从动能到电能。"
+            },
+            {
+              "msg": "那是另一种能量转化方向。想一想制动时的回收过程。"
+            }
+          ]
+        },
+        {
+          "op": "ask",
+          "id": "l5-grammar-say",
+          "cfg": {
+            "stage": "说",
+            "task": "用“把……转化成……”说明能量回收。",
+            "answer": "能量回收系统把一部分动能转化成电能。",
+            "speechTarget": "能量回收系统把一部分动能转化成电能。"
+          },
+          "check": {
+            "type": "choice",
+            "answers": [
+              "能量回收系统把一部分动能转化成电能。",
+              "它把一部分动能转化成电能。",
+              "把一部分动能转化成电能。"
+            ]
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "你说清楚了对象和结果。"
+            },
+            {
+              "msg": "可以照着说：把一部分动能转化成电能。"
+            }
+          ],
+          "attempt": [
+            {
+              "op": "if",
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "then": [
+                {
+                  "op": "action",
+                  "name": "focus",
+                  "args": {
+                    "part": "battery"
+                  }
+                },
+                {
+                  "op": "action",
+                  "name": "animate",
+                  "args": {
+                    "part": "battery"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d",
+      "name": "③ 教小龙",
+      "commands": [
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "dragon",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "action",
+          "name": "scene",
+          "args": {
+            "dragon": "enter"
+          }
+        },
+        {
+          "op": "say",
+          "who": "dragon",
+          "line": {
+            "zh": "师傅，请教我：制动时，能量回收把什么转化成什么？",
+            "en": "What is converted into what when braking?",
+            "teacher": "使用提问而非伪造学习者偏误。"
+          }
+        },
+        {
+          "op": "ask",
+          "id": "l5-teach",
+          "cfg": {
+            "stage": "教",
+            "task": "把完整的方法教给小龙。",
+            "answer": "能量回收系统把一部分动能转化成电能。"
+          },
+          "check": {
+            "type": "choice",
+            "answers": [
+              "能量回收系统把一部分动能转化成电能。",
+              "它把一部分动能转化成电能。",
+              "把一部分动能转化成电能。"
+            ]
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "小龙：我知道对象和结果了，谢谢师傅。"
+            },
+            {
+              "msg": "小龙：请再告诉我对象和结果。可以用“把……转化成……”。"
+            }
+          ]
+        },
+        {
+          "op": "say",
+          "who": "dragon",
+          "line": {
+            "zh": "“电能”和“电池”一样吗？",
+            "en": "Are electrical energy and a battery the same thing?",
+            "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+          }
+        },
+        {
+          "op": "ask",
+          "id": "l5-transfer",
+          "cfg": {
+            "stage": "教",
+            "task": "区分能量与装置。",
+            "options": [
+              "不一样，电能是能量，电池是装置。",
+              "一样。"
+            ],
+            "answer": "不一样，电能是能量，电池是装置。"
+          },
+          "check": {
+            "type": "choice",
+            "answers": [
+              "不一样，电能是能量，电池是装置。"
+            ]
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "小龙：我会区分了。"
+            },
+            {
+              "msg": "电能是能量，电池是储能装置。再说一遍。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "c",
+      "name": "④ 情境迁移",
+      "commands": [
+        {
+          "op": "action",
+          "name": "scene",
+          "args": {
+            "wang": "show",
+            "dragon": "show",
+            "stamp": false
+          }
+        },
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "inspect",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "汽车慢下来了。动能变成了什么？",
+            "en": "The car is slowing down. What is the kinetic energy converted into?",
+            "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+          }
+        },
+        {
+          "op": "ask",
+          "id": "l5-inspect",
+          "cfg": {
+            "stage": "说",
+            "task": "补全：能量回收系统把一部分＿＿转化成＿＿。",
+            "answer": "能量回收系统把一部分动能转化成电能。"
+          },
+          "check": {
+            "type": "choice",
+            "answers": [
+              "能量回收系统把一部分动能转化成电能。",
+              "把一部分动能转化成电能。",
+              "动能，电能。"
+            ]
+          },
+          "feedback": [
+            {
+              "when": {
+                "path": "result.ok",
+                "is": true
+              },
+              "msg": "方向说明正确；本课句式练习完成。"
+            },
+            {
+              "msg": "对象是动能，结果是电能。试着说完整句。"
+            }
+          ]
+        },
+        {
+          "op": "action",
+          "name": "scene",
+          "args": {
+            "stamp": true
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "只能回收一部分能量。",
+            "en": "Only part of the energy can be recovered.",
+            "teacher": "专业解释仍需专业教师审阅。 用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+          }
+        }
+      ]
+    },
+    {
+      "id": "end",
+      "name": "出厂",
+      "commands": [
+        {
+          "op": "action",
+          "name": "board",
+          "args": {
+            "mode": "hide"
+          }
+        },
+        {
+          "op": "action",
+          "name": "camera",
+          "args": {
+            "view": "end",
+            "seconds": 1
+          }
+        },
+        {
+          "op": "say",
+          "who": "wang",
+          "line": {
+            "zh": "你会用这个句子了！",
+            "en": "You can use this sentence now!",
+            "teacher": "用于验证课程包复用的自编教学样例，待中文教师与新能源汽车专业教师审阅；不声称对应教材第5课、教材页码或真实语料。"
+          }
+        },
+        {
+          "op": "action",
+          "name": "departure",
+          "args": {
+            "car": "phev"
+          }
+        },
+        {
+          "op": "finish"
+        }
+      ]
+    }
+  ]
+}

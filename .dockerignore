@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+.local
+data
+private
+artifacts
+dist
+node_modules
+*.zip
+*.docx
+*.log
+attachments
+recordings

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>课堂概览 · 插电工坊</title>
+<style>
+:root{color-scheme:light;font-family:"Microsoft YaHei",system-ui,sans-serif;color:#3a2e28;background:#f3eadc}*{box-sizing:border-box}body{margin:0;padding:32px 20px}main{max-width:980px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:20px}a{color:#2f5d62}h1{font:600 30px/1.3 "SimSun",serif;margin:6px 0 12px}p{line-height:1.7}.eyebrow{letter-spacing:.14em;color:#b23a2e;font-size:12px}.intro{color:#675b53;max-width:680px}.panel{background:#fbf6ee;border:1px solid #dfd3c4;border-radius:16px;padding:22px;margin:22px 0}form{display:flex;flex-wrap:wrap;gap:12px;align-items:end}label{display:grid;gap:7px;font-size:13px;flex:1;min-width:200px}input{font:inherit;border:1px solid #b6a99c;background:white;padding:11px;border-radius:8px}button{min-height:44px;border:0;padding:11px 18px;border-radius:9px;background:#2f5d62;color:white;font:600 14px system-ui;cursor:pointer}button:disabled{opacity:.5;cursor:default}.secondary{background:transparent;color:#2f5d62;border:1px solid #2f5d62}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}.metric{padding:22px;background:#fbf6ee;border-radius:14px;border:1px solid #dfd3c4}.metric b{display:block;font-size:32px;color:#2f5d62;margin:4px 0 12px}.metric span{font-size:13px;color:#675b53}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #dfd3c4;padding:13px 8px;font-size:14px}small,.note{font-size:12px;color:#675b53;line-height:1.7}#status{margin-bottom:0}footer{margin-top:20px}.hidden{display:none}@media(max-width:520px){body{padding:22px 14px}h1{font-size:26px}header{align-items:start}.panel{padding:16px}.stats{grid-template-columns:1fr 1fr}}
+</style>
+<main>
+ <header><div><div class="eyebrow">插电工坊 / 教师</div><h1>课堂概览</h1></div><a href="/">回到车间 →</a></header>
+ <p class="intro">看见学习者的参与过程：尝试说了多少次，哪里需要提示。提示是一种支持，这里不按正确率给学生排名。</p>
+ <section class="panel">
+  <form id="access"><label>教师访问凭据（本机服务未设置时可留空）<input type="password" id="token" autocomplete="off" maxlength="300" placeholder="仅在当前页面内存中使用"></label><button id="refresh">读取概览</button><button class="secondary" type="button" id="download" disabled>导出汇总</button></form>
+  <p id="status" role="status">点击“读取概览”查看当前服务收到的记录。</p>
+ </section>
+ <section id="results" class="hidden" aria-label="课堂统计">
+  <div class="stats" id="metrics"></div>
+  <div class="panel"><h2>课程记录</h2><table><thead><tr><th>课程</th><th>收到的事件</th></tr></thead><tbody id="lessons"></tbody></table><p class="note">一次课堂会产生多个事件，事件数不等于学员数。匿名会话可能对应同一人的多次打开。</p></div>
+ </section>
+ <footer><p class="note">只汇总已启用联机并成功发送的记录；离线练习不在这里。打字、点选、自报跟读不算检测到的开口。语音尝试次数不代表发音正确或已经掌握。应用不保存姓名、录音和自由文本转写。</p></footer>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);let snapshot=null;
+const fields=[['sessions','匿名会话'],['completedSessions','完成课堂的会话'],['speechAttempts','语音尝试'],['hints','使用提示']];
+const names={'nev-l4':'第4课 · 认识插电式混合动力汽车','nev-l5':'第5课 · 能量回收（教学样例）'};
+$('access').addEventListener('submit',async event=>{
+ event.preventDefault();$('refresh').disabled=true;$('status').textContent='正在读取…';
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
+ try{
+  const key=$('token').value.trim();
+  const response=await fetch('/api/teacher/summary',{headers:key?{Authorization:'Bearer '+key}:{},signal:controller.signal,cache:'no-store'});
+  if(!response.ok)throw new Error(response.status===401?'需要正确的教师访问凭据。':'服务暂时不可用，请确认本机服务正在运行。');
+  const data=await response.json();if(!data.ok)throw new Error('没有读到有效的课堂汇总。');snapshot=data;
+  $('metrics').replaceChildren();
+  for(const [key,label]of fields){const box=document.createElement('div'),value=document.createElement('b'),caption=document.createElement('span');box.className='metric';value.textContent=String(Number(data[key])||0);caption.textContent=label;box.append(value,caption);$('metrics').append(box);}
+  $('lessons').replaceChildren();
+  for(const [key,count]of Object.entries(data.lessons||{})){const row=document.createElement('tr'),label=document.createElement('td'),value=document.createElement('td');label.textContent=names[key]||key;value.textContent=String(count);row.append(label,value);$('lessons').append(row);}
+  $('results').classList.remove('hidden');$('download').disabled=false;
+  $('status').textContent=data.events?`已读取 ${data.events} 个事件 · ${new Date().toLocaleTimeString('zh-CN')}`:'还没有课堂记录。回到车间启用“联机”后，新的练习记录会出现在这里。';
+ }catch(error){$('status').textContent=error.name==='AbortError'?'读取超时，可以稍后重试。':error.message;}
+ finally{clearTimeout(timer);$('refresh').disabled=false;}
+});
+$('download').onclick=()=>{if(!snapshot)return;const url=URL.createObjectURL(new Blob([JSON.stringify({...snapshot,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='workshop-summary.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+</script>
+</html>

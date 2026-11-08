@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>插电工坊 · 3D 职业中文课 · 第4课 认识插电式混合动力汽车</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='6' fill='%23b23a2e'/%3E%3Ctext x='16' y='22' font-size='16' text-anchor='middle' fill='%23fff3e6' font-family='serif'%3E%E8%AF%AD%3C/text%3E%3C/svg%3E" />
+<style>/*STYLE*/</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+<div class="labels" id="labels"></div>
+
+<div class="topbar hidden" id="topbar">
+  <div class="brand"><span class="seal">语</span><span class="bt">插电工坊 <span id="lessonBadge" style="font:500 11px var(--ll-sans);color:var(--ll-soft)">第4课</span></span></div>
+  <div class="steps" id="steps"></div>
+  <div class="spacer"></div>
+  <button class="plug" id="plug" type="button" title="语料库充电枪：插上 / 拔下"><span class="knob"></span><span id="plugTxt">未插电 · 仅教材</span></button>
+  <div class="tools" id="tools">
+    <button type="button" data-t="compare" title="对照面板：同一步插电前后的差别">对照</button>
+    <button type="button" data-t="teacher" title="教师模式：显示老师每一步该说什么">教师</button>
+    <button type="button" data-t="py" aria-pressed="true">拼音</button>
+    <button type="button" data-t="en" aria-pressed="true">EN</button>
+    <button type="button" data-t="sound" aria-pressed="true">🔊</button>
+    <button type="button" data-t="scene" title="换成 Marble 场景（World Labs 高斯泼溅）">场景</button>
+    <button type="button" data-t="about">数据</button>
+    <button type="button" data-t="online" aria-pressed="false" title="联网增强与语料插电是两个独立开关">离线</button>
+    <button type="button" data-t="ask">问师傅</button>
+    <button type="button" data-t="dashboard">课堂概览</button>
+  </div>
+</div>
+
+<div class="hud hidden" id="hud">
+  <div class="gauge"><b>🔋 电池 · 开口</b><div class="bar"><i id="gB"></i></div><small id="gBt">开口 0 次</small></div>
+  <div class="gauge fuel"><b>⛽ 油箱 · 提示</b><div class="bar"><i id="gF" style="width:100%"></i></div><small id="gFt">提示 0 次</small></div>
+  <div class="mode-tag" id="modeTag">未插电：内容只来自课本和设计者经验</div>
+</div>
+
+<div class="teacher hidden" id="teacher"></div>
+<div class="compare hidden" id="compare"></div>
+<div class="board hidden" id="board"></div>
+
+<div class="ll-cap hidden" id="cap">
+  <div class="ll-cap-top"><span class="ll-cap-who" id="capWho"></span><span class="ll-cap-lv" id="capLv">HSK 2</span><span id="capSeal"></span>
+    <span class="ll-cap-tools"><button type="button" id="capSay" title="再听一遍">🔊</button></span></div>
+  <div class="ll-cap-line" id="capLine" lang="zh"></div>
+  <div class="ll-cap-en" id="capEn"></div>
+  <div class="cap-gloss" id="capGloss" aria-label="超出当前等级的词语释义"></div>
+  <button class="next hidden" id="capNext" type="button">继续 ▸</button>
+</div>
+
+<div class="inbar hidden" id="inbar">
+  <div class="task" id="task"></div>
+  <div class="chips" id="chips"></div>
+  <form id="form" autocomplete="off">
+    <input id="inp" type="text" placeholder="说中文或打字 · Speak or type in Chinese (pinyin OK)" />
+    <button class="btn mic" id="mic" type="button" title="按一下开始说中文">🎤 说</button>
+    <button class="btn" type="submit">OK</button>
+    <button class="btn ghost" id="hint" type="button" title="提示会消耗油箱">提示</button>
+  </form>
+  <div class="hintline" id="hintline"></div>
+  <div class="msg" id="msg"></div>
+</div>
+
+<div class="ll-gate" id="gate">
+  <div class="ll-gate-card">
+    <div class="seal-big">语</div>
+    <h1>插电工坊 · 学中文<small>Plug-in Workshop · Vocational Chinese in 3D</small></h1>
+    <label class="lesson-picker">本次课堂 / Lesson <select id="lessonSelect" aria-label="选择课程"></select></label>
+    <p class="ll-lead">走进新能源汽车实训车间，跟王明师傅学《认识插电式混合动力汽车》。说对中文，零件才会动；最后你来当师傅，教新来的学徒小龙。<br>
+      Walk into an EV workshop with master Wang Ming. Say it in Chinese and the parts move. Then you become the master and teach Xiaolong.<br>
+      <b style="color:#ffd9b0">车间里有一根“语料库充电枪”：插上，课本之外的真实语料就接进来了。</b></p>
+    <div class="ll-levels">
+      <button type="button" class="ll-level" data-lv="1"><b>HSK 1</b><span>Just starting · English page</span></button>
+      <button type="button" class="ll-level" data-lv="2"><b>HSK 2</b><span>Simple everyday talk · English page</span></button>
+      <button type="button" class="ll-level" data-lv="3"><b>HSK 3</b><span>Everyday topics · English page</span></button>
+      <button type="button" class="ll-level ll-teach" data-lv="t"><b>教师演示 · 对照模式</b><span>中文提示 + 对照面板：同一步插电前后的差别并排显示（适合录对比视频）</span></button>
+    </div>
+    <div class="ll-gate-foot">词语等级：HSK 3.0 syllabus data by Gushi（gushichinese.com/hsk-3.0/downloads），CC BY-SA 4.0 · 第4课语料来自交付包快照（标注检索日期 2026-11-07/08），本次未重新回源核验。第5课为自编试课样例，待教师审阅。<br>建议用 Edge 或 Chrome 打开；默认离线，可打字、输入拼音或点选。启用联机和麦克风前会说明音频去向。</div>
+  </div>
+</div>
+
+<script>/*SCRIPTS*/</script>
+</body>
+</html>
