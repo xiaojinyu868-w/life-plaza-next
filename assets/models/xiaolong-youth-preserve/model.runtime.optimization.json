@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "operation": "technical-texture-downscale",
+  "generatedAt": "2026-11-08T17:27:33.870Z",
+  "source": {
+    "file": "model_url.glb",
+    "bytes": 11475452,
+    "sha256": "a045fc404c73a814896e7f290e6e60317d89ab140de16ce346bdb50c0f810b27"
+  },
+  "runtime": {
+    "file": "model.runtime.glb",
+    "bytes": 6023100,
+    "sha256": "52d83a4d44dff86cfa7c88777bee50ef98414462955e05485d0f39504209e662"
+  },
+  "settings": {
+    "maxEdge": 2048,
+    "maxTotalPixels": 33554432,
+    "allowUpscale": false,
+    "preserveOriginal": true
+  },
+  "tool": {
+    "node": "v24.22.1",
+    "sharp": "0.35.4",
+    "libvips": "8.18.6"
+  },
+  "totalBeforePixels": 50331648,
+  "totalAfterPixels": 12582912,
+  "images": [
+    {
+      "index": 0,
+      "name": "Color_aee736df-09e6-43f7-9230-093025e56e05",
+      "bufferView": 4,
+      "mimeType": "image/jpeg",
+      "resized": true,
+      "before": {
+        "width": 4096,
+        "height": 4096,
+        "bytes": 3288263,
+        "sha256": "f8b5f09f1c0f2ee02ccaa12162a5fe55c9645b4602643405e1711e45dab1d318"
+      },
+      "after": {
+        "width": 2048,
+        "height": 2048,
+        "bytes": 1454520,
+        "sha256": "9e326a68c4a9b867f735753d7b76c721b863e07e382b403fab2964182a79feb6"
+      },
+      "channels": 3,
+      "alphaPreserved": true,
+      "kernel": "lanczos3",
+      "encoding": "JPEG quality 95, 4:4:4"
+    },
+    {
+      "index": 1,
+      "name": "ORM_aee736df-09e6-43f7-9230-093025e56e05",
+      "bufferView": 5,
+      "mimeType": "image/jpeg",
+      "resized": true,
+      "before": {
+        "width": 4096,
+        "height": 4096,
+        "bytes": 2128200,
+        "sha256": "a747ba64a1b67bb66399afde91aced5ae785e9d81869edef2d6a0018b67c50ba"
+      },
+      "after": {
+        "width": 2048,
+        "height": 2048,
+        "bytes": 1075322,
+        "sha256": "713c27e509908d0cc2eb4eb0532b9a1c43ab708f6b28cbeee61c1e150c81d992"
+      },
+      "channels": 3,
+      "alphaPreserved": true,
+      "kernel": "lanczos3",
+      "encoding": "JPEG quality 95, 4:4:4"
+    },
+    {
+      "index": 2,
+      "name": "NormalGL_aee736df-09e6-43f7-9230-093025e56e05",
+      "bufferView": 6,
+      "mimeType": "image/png",
+      "resized": true,
+      "before": {
+        "width": 4096,
+        "height": 4096,
+        "bytes": 4716754,
+        "sha256": "fb51f50810295ee861dc2ed0e13280d29edc5984a4410792275dc43545af7ee7"
+      },
+      "after": {
+        "width": 2048,
+        "height": 2048,
+        "bytes": 2151040,
+        "sha256": "1285c9dc7f976f051c6015bb256e99eac3102d03f3e33c185f58b56931d9cd40"
+      },
+      "channels": 3,
+      "alphaPreserved": true,
+      "kernel": "lanczos3",
+      "encoding": "PNG lossless, compression 9"
+    }
+  ],
+  "verification": {
+    "gltfFieldsPreserved": true,
+    "accessorsUnchanged": true,
+    "meshesUnchanged": true,
+    "materialsUnchanged": true,
+    "imageAndTextureReferencesUnchanged": true,
+    "nonImageBufferViewsByteIdentical": true,
+    "unknownChunksByteIdentical": true,
+    "preservedViews": [
+      {
+        "bufferView": 0,
+        "bytes": 459072,
+        "beforeSha256": "d6c5c48c79c68bca11e156abd84a4f91986875e7373fd9100d836e4e6ba9a394",
+        "afterSha256": "d6c5c48c79c68bca11e156abd84a4f91986875e7373fd9100d836e4e6ba9a394"
+      },
+      {
+        "bufferView": 1,
+        "bytes": 330372,
+        "beforeSha256": "274821d8acc42ff749811ac2d80a6480647af7d639489b19b495e6b34b0c9de3",
+        "afterSha256": "274821d8acc42ff749811ac2d80a6480647af7d639489b19b495e6b34b0c9de3"
+      },
+      {
+        "bufferView": 2,
+        "bytes": 220248,
+        "beforeSha256": "0582d4156899046fcd36641a8639ac588b1883bf971799e57af4fafe0d567296",
+        "afterSha256": "0582d4156899046fcd36641a8639ac588b1883bf971799e57af4fafe0d567296"
+      },
+      {
+        "bufferView": 3,
+        "bytes": 330372,
+        "beforeSha256": "620b4725efb06a958b3f06eac8e070349b499ec072d8e050b4e64ea2e2041a52",
+        "afterSha256": "620b4725efb06a958b3f06eac8e070349b499ec072d8e050b4e64ea2e2041a52"
+      }
+    ]
+  },
+  "note": "Only texture raster resolution/encoding and BIN packing changed. No geometry, topology, UV, transform, material or scene edits; no generative redraw. JPEG re-encoding is lossy. Visual approval is separate."
+}

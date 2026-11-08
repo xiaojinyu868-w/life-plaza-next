@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "default": "child",
+  "characters": [
+    {
+      "id": "child",
+      "name": "幼年小龙",
+      "height": 1.35,
+      "rotationY": 0,
+      "model": "assets/models/xiaolong-child/model.runtime.glb",
+      "reference": "用户参考图 7",
+      "status": "verified",
+      "taskId": "c3f58877-f573-49d1-8a68-fd7bb4c1b229",
+      "sha256": "223167b16356aea4890eb41c4d8591ae9a6dba9132adb2ae43c4399e0ebf0e37"
+    },
+    {
+      "id": "youth",
+      "name": "青少年小龙",
+      "height": 1.8,
+      "rotationY": 0,
+      "model": "assets/models/xiaolong-youth-preserve/model.runtime.glb",
+      "reference": "用户参考图 8",
+      "status": "verified",
+      "taskId": "aee736df-09e6-43f7-9230-093025e56e05",
+      "sha256": "52d83a4d44dff86cfa7c88777bee50ef98414462955e05485d0f39504209e662"
+    }
+  ]
+}

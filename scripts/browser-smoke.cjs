@@ -26,7 +26,10 @@ if (portableOffline) {
 fs.mkdirSync(output, { recursive: true });
 
 async function completeLesson(browser, lesson, plugged) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, offline: portableOffline });
+  const videoDir = process.env.WORKSHOP_RECORD_VIDEO_DIR;
+  const selectedCharacter = process.env.WORKSHOP_CHARACTER;
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, offline: portableOffline,
+    ...(videoDir ? { recordVideo: { dir: path.resolve(videoDir), size: { width: 1440, height: 900 } } } : {}) });
   const page = await context.newPage();
   let offlineProbe = null;
   if (portableOffline) {
@@ -47,21 +50,35 @@ async function completeLesson(browser, lesson, plugged) {
   await page.addInitScript(() => { window.CDG_AUTOSTATE = { level: 2, fast: true }; });
   const url = pathToFileURL(classroomFile);
   url.searchParams.set('lesson', lesson); url.searchParams.set('debug', '1');
+  if (selectedCharacter) url.searchParams.set('character', selectedCharacter);
   await page.goto(url.href);
   if (portableOffline) assert.equal(await page.evaluate(() => navigator.onLine), false);
   await page.waitForFunction(() => window.__cdg?.currentPrompt !== undefined);
+  const character = await page.evaluate(() => window.__cdg.characters?.options.length ? window.__cdg.characters.defaultId : null);
+  if (character) await page.waitForFunction(id => window.__cdg.characters.state.active === id && !window.__cdg.characters.state.loading, selectedCharacter || character);
   await page.evaluate(() => { window.__cdg.ST.sound = false; window.speechSynthesis?.cancel(); });
   const start = Date.now(); let wrongTested = false, lastStep = null;
+  const departureCamera = []; let departureFrame = -1;
   while (Date.now() - start < 180000) {
     const state = await page.evaluate(() => ({
       prompt: window.__cdg.currentPrompt, station: window.__cdg.ST.station,
       done: !!document.querySelector('.modal .stats'),
+      eye: [...window.__cdg.cam.eye], carX: window.__cdg.W.show.phev.root.pos[0],
     }));
     if (state.station && !stations.has(state.station)) { stations.add(state.station); console.log(`${lesson}: ${state.station} (${Math.round((Date.now() - start) / 1000)}s)`); }
     if (errors.length) throw new Error(errors.join('\n'));
+    if (state.station === 'end') {
+      assert.ok(state.eye[0] < 27.8, 'departure camera must stay inside the east wall');
+      if (state.carX > 11.1) {
+        departureCamera.push({ eye: state.eye, carX: state.carX });
+        const frame = Math.floor((state.carX-11)/4);
+        if (videoDir && frame > departureFrame) { departureFrame=frame; await page.screenshot({ path:path.join(output, `departure-${frame}.png`) }); }
+      }
+    }
     if (state.done) break;
     const cfg = state.prompt;
     if (!cfg || cfg.step === lastStep) { await page.waitForTimeout(60); continue; }
+    if (videoDir) await page.waitForTimeout(1500);
     let answer = cfg.answer;
     if (cfg.plugAction) answer = (cfg.options || []).find(x => plugged ? x.includes('🔌') : x.startsWith('先不插'));
     if (!answer) answer = cfg.options?.[0];
@@ -86,15 +103,23 @@ async function completeLesson(browser, lesson, plugged) {
     throw new Error(`${lesson} incomplete: ${JSON.stringify(detail)}`);
   }
   await page.locator('.modal .stats').waitFor({ timeout: 1000 });
-  const stats = await page.evaluate(() => ({ spoken: window.__cdg.ST.spoken, responses: window.__cdg.ST.responses, evidence: window.__cdg.ST.ev.size, lesson: window.CDG_CURRENT_LESSON.id }));
+  if (videoDir) await page.waitForTimeout(1800);
+  const stats = await page.evaluate(() => ({ spoken: window.__cdg.ST.spoken, responses: window.__cdg.ST.responses, evidence: window.__cdg.ST.ev.size, lesson: window.CDG_CURRENT_LESSON.id,
+    generatedCharacter: window.__cdg.characters?.state.generated ? window.__cdg.characters.state.active : null }));
   assert.equal(stats.spoken, 0, 'typing must not count as speech');
   if (lesson === 'nev-l5') assert.equal(stats.evidence, 0, 'authored lesson must not acquire corpus evidence');
   assert.deepEqual([...stations], ['intro', 'a', 'b', 'd', 'c', 'end']);
   assert.equal(requests.length, 0, 'file classroom must not send HTTP requests');
   assert.equal(otherLocalResources.length, 0, 'single HTML must not depend on sibling source files or assets');
   await page.screenshot({ path: path.join(output, `${lesson}-${plugged ? 'plugged' : 'unplugged'}-complete.png`) });
-  const result = { lesson, plugged, stations: [...stations], checkedPrompts: steps.size, wrongAnswerRecovery: wrongTested, offlineHttpRequests: requests.length, otherLocalResources: otherLocalResources.length, ...(portableOffline ? { navigatorOnline: await page.evaluate(() => navigator.onLine), offlineProbe } : {}), errors, ...stats };
-  await context.close(); return result;
+  const result = { lesson, plugged, stations: [...stations], checkedPrompts: steps.size, wrongAnswerRecovery: wrongTested, offlineHttpRequests: requests.length, otherLocalResources: otherLocalResources.length, ...(portableOffline ? { navigatorOnline: await page.evaluate(() => navigator.onLine), offlineProbe } : {}), errors, departureCamera, ...stats };
+  const video = page.video();
+  await context.close();
+  if (video) {
+    result.video = path.join(path.resolve(videoDir), `${lesson}-${plugged ? 'plugged' : 'unplugged'}-${selectedCharacter || character || 'placeholder'}-${sourceSha256.slice(0,12)}.webm`);
+    await video.saveAs(result.video);
+  }
+  return result;
 }
 
 async function checkOnlineAndMobile(browser) {

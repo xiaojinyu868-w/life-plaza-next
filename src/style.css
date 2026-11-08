@@ -64,7 +64,7 @@ body.plugged .plug .knob::after { transform: translateX(16px); background: #fff;
 body.plugged .mode-tag { background: rgba(178,58,46,.92); color: #fff6ea; }
 
 /* ---- 字幕（同人生广场 ll-cap）---- */
-.ll-cap { position: fixed; left: 50%; bottom: 128px; transform: translateX(-50%); z-index: 45; width: min(780px, calc(100vw - 24px)); padding: 10px 14px 9px; border-radius: 16px; background: rgba(251, 246, 238, 0.96); color: var(--ll-ink); box-shadow: var(--ll-shadow); font-family: var(--ll-font); transition: opacity .3s; }
+.ll-cap { position: fixed; left: 50%; bottom: var(--cap-b, 128px); transform: translateX(-50%); z-index: 45; width: min(780px, calc(100vw - 24px)); padding: 10px 14px 9px; border-radius: 16px; background: rgba(251, 246, 238, 0.96); color: var(--ll-ink); box-shadow: var(--ll-shadow); font-family: var(--ll-font); transition: opacity .3s; }
 .ll-cap-top { display: flex; align-items: center; gap: 8px; font: 12px/1.2 var(--ll-sans); color: var(--ll-soft); }
 .ll-cap-who { font-weight: 700; color: var(--ll-teal); }
 .ll-cap-who.dragon { color: var(--zhu); }
@@ -111,7 +111,7 @@ ruby.ll-new { color: var(--ll-new); text-decoration: underline dotted rgba(181,8
 .inbar .msg.ok { color: var(--ll-teal); }
 
 /* ---- 并联接头面板 ---- */
-.board { position: fixed; left: 50%; bottom: 236px; transform: translateX(-50%); z-index: 44; width: min(780px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 16px; background: rgba(46, 45, 51, 0.92); color: #f4ede0; box-shadow: var(--ll-shadow); font-family: var(--ll-font); }
+.board { position: fixed; left: 50%; bottom: var(--board-b, 236px); transform: translateX(-50%); z-index: 44; width: min(780px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 16px; background: rgba(46, 45, 51, 0.92); color: #f4ede0; box-shadow: var(--ll-shadow); font-family: var(--ll-font); }
 .board h4 { margin: 0 0 8px; font: 600 12px/1.3 var(--ll-sans); color: #d9c9a8; letter-spacing: .06em; display: flex; justify-content: space-between; }
 .board .sent { font-size: 22px; line-height: 2.4; display: flex; flex-wrap: wrap; align-items: flex-end; }
 .board .seg { white-space: nowrap; }
@@ -241,7 +241,7 @@ body.plugged .lbl.plaque .seal { box-shadow: 0 0 18px 6px rgba(255,170,120,.7), 
 @media (max-width: 760px) {
   .tools button[data-t="py"], .tools button[data-t="en"] { display: none; } #plugTxt { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
   .steps { max-width: 40vw; } .hud { display: none; } .teacher { max-width: calc(100vw - 24px); top: 56px; }
-  .ll-cap { bottom: 150px; } .ll-cap-line { font-size: 18px; } .board { bottom: 268px; } .board .sent { font-size: 17px; }
+  .ll-cap { bottom: var(--cap-b, 150px); } .ll-cap-line { font-size: 18px; } .board { bottom: var(--board-b, 268px); } .board .sent { font-size: 17px; }
   .compare, .ll-card { top: auto; bottom: 10px; max-height: 55vh; }
 }
 
@@ -296,3 +296,17 @@ body.plugged .lbl.plaque .seal { box-shadow: 0 0 18px 6px rgba(255,170,120,.7), 
 .scene-panel .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .scene-panel .btns button { border: 0; border-radius: 10px; padding: 6px 10px; background: var(--ll-teal); color: #fff; font: 600 12px var(--ll-sans); cursor: pointer; }
 .scene-panel .btns button.ghost { background: transparent; color: var(--ll-soft); border: 1px solid rgba(58,46,40,.16); }
+
+/* v1.1 handoff: preserve readable feedback when input and captions grow. */
+.steps { scrollbar-width: none; scroll-behavior: smooth; }
+.steps::-webkit-scrollbar { display: none; }
+.ll-fix { max-height: calc(100vh - 160px); overflow: auto; }
+@media (min-width:900px) and (max-width:1640px) {
+ body.fixing .ll-cap, body.fixing .inbar, body.fixing .board { left: calc(216px + 50vw); width: min(780px, calc(100vw - 458px)); }
+ body.fixing .ll-fix { bottom:14px; }
+}
+@media (max-width:899px) {
+ .ll-fix { top: var(--feedback-top, 110px); bottom:auto; left:12px; width:calc(100vw - 24px); max-height:min(240px, 28vh); }
+ .teacher { top:calc(var(--topbar-b, 54px) + 8px); width:calc(100vw - 24px); max-width:calc(100vw - 24px); }
+ .toast { top:var(--feedback-top, 150px); width:max-content; max-width:calc(100vw - 24px); }
+}

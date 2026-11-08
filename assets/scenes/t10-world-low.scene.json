@@ -1,0 +1,160 @@
+{
+  "source": {
+    "file": "t10.html",
+    "sha256": "d58cb3386db1f06ddf77cf450ac97e58f94f89b486d0a2a6c874bcafbd1b566b",
+    "bytes": 2069629,
+    "extraction": "Strict JSON + canonical base64 parsing only; no supplied JavaScript executed"
+  },
+  "asset": {
+    "file": "assets/scenes/t10-world-low.spz",
+    "originalName": "world-low.spz",
+    "sha256": "90901a27839007aee2f4bc36eee13221cd50dee98c796f77ed1f93a51ab9bf3e",
+    "bytes": 1364352,
+    "rawBytes": 1867792,
+    "version": 2,
+    "points": 98304,
+    "shDegree": 0,
+    "fractionalBits": 12,
+    "flags": 0
+  },
+  "embeddedMetadata": null,
+  "embeddedPlacement": null,
+  "provenanceLimit": "User-provided embedded scene. Its filename/header does not establish that it is an automotive workshop. Visual inspection and provenance review required.",
+  "stats": {
+    "sourceUnits": "un-calibrated scene units; no metric scale supplied",
+    "positions": {
+      "x": {
+        "min": -3.2041015625,
+        "p01": -1.322998046875,
+        "p03": -1.24658203125,
+        "p05": -1.2265625,
+        "median": 0.009521484375,
+        "p95": 1.351806640625,
+        "p97": 1.379638671875,
+        "p99": 1.4619140625,
+        "max": 3.77783203125
+      },
+      "y": {
+        "min": -2.504150390625,
+        "p01": -1.98974609375,
+        "p03": -1.8974609375,
+        "p05": -1.800537109375,
+        "median": 0.0078125,
+        "p95": 1.111328125,
+        "p97": 1.11474609375,
+        "p99": 1.122314453125,
+        "max": 1.218505859375
+      },
+      "z": {
+        "min": -13.403076171875,
+        "p01": -1.98876953125,
+        "p03": -1.369140625,
+        "p05": -1.2548828125,
+        "median": 2.180419921875,
+        "p95": 5.654296875,
+        "p97": 5.951416015625,
+        "p99": 6.590576171875,
+        "max": 18.16943359375
+      }
+    },
+    "scales": {
+      "x": {
+        "min": 0.00004539993096841499,
+        "p01": 0.0038391663692891598,
+        "p03": 0.005585954058915377,
+        "p05": 0.0067379469983279705,
+        "median": 0.018315639346837997,
+        "p95": 0.056416139006614685,
+        "p97": 0.06805085390806198,
+        "p99": 0.1121968924999237,
+        "max": 0.7788007855415344
+      },
+      "y": {
+        "min": 0.00004539993096841499,
+        "p01": 0.0038391663692891598,
+        "p03": 0.005247518420219421,
+        "p05": 0.006329715251922607,
+        "median": 0.019496895372867584,
+        "p95": 0.06392785906791687,
+        "p97": 0.07711172103881836,
+        "p99": 0.1121968924999237,
+        "max": 0.7316156029701233
+      },
+      "z": {
+        "min": 0.00004539993096841499,
+        "p01": 0.00013984163524582982,
+        "p03": 0.00016868120292201638,
+        "p05": 0.0001911408471642062,
+        "median": 0.0003801289713010192,
+        "p95": 0.0009118819725699723,
+        "p97": 0.0010999395744875073,
+        "p99": 0.0018134937854483724,
+        "max": 0.011108996346592903
+      }
+    },
+    "quaternionLength": {
+      "min": 0.9999999722019538,
+      "max": 1.0054752314425053
+    },
+    "alpha": {
+      "min": 0,
+      "max": 255,
+      "zeroCount": 423
+    },
+    "decodedAttributeSha256": {
+      "pos": "7ce06d70c5aba63d875336409cd6feece17b0b424a04873204f71eece2dd405b",
+      "scale": "48347fbdd55df5e27c8c8ce7fb12f370baf3cacb6f6775878c244ca607faa8da",
+      "rot": "44c476294c8e2047a180666df0e21b5097733501d3379cc68149f0ed5c066fce",
+      "rgba": "f53ac7da51376b0bdd7e162347fe0f22620171c20e8812e37da57e899a82528d"
+    }
+  },
+  "alignment": {
+    "originalHtmlDefault": {
+      "scale": 1,
+      "yaw": 0,
+      "flip": true,
+      "x": 0,
+      "y": 1.5,
+      "z": 0
+    },
+    "originalAutoAlignApproximation": {
+      "place": {
+        "scale": 1,
+        "yaw": 0,
+        "flip": true,
+        "x": 1.1390869140625,
+        "y": 1.11474609375,
+        "z": 2.498974609375
+      },
+      "sampledPoints": 49152,
+      "roomEstimate": {
+        "x0": -0.08820800781250004,
+        "x1": 2.4882080078125,
+        "z0": -3.154345703125,
+        "z1": 3.754345703125,
+        "y1": 3.012451171875
+      },
+      "basis": "Heuristic 5/95% horizontal and 3% vertical source quantiles; not semantic floor detection or metric calibration"
+    },
+    "currentRendererAutoAlign": {
+      "place": {
+        "scale": 1,
+        "yaw": 0,
+        "flip": true,
+        "x": 1.13505859375,
+        "y": 1.10693359375,
+        "z": 2.7102783203125
+      },
+      "sampledPoints": 40000,
+      "roomEstimate": {
+        "x0": -0.11347656250000004,
+        "x1": 2.5134765625,
+        "z0": -3.4926025390625,
+        "z1": 4.0926025390625,
+        "y1": 3.0234375
+      },
+      "basis": "Heuristic 5/95% horizontal and 3% vertical source quantiles; not semantic floor detection or metric calibration"
+    },
+    "caution": "t10 stored no PLACE or metricScale. Browser localStorage overrides cannot be recovered from this HTML. Suggestions are not user-approved saved coordinates."
+  }
+}

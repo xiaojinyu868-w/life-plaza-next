@@ -31,6 +31,22 @@ t('word wrong', !L.heardWord('发动机', '驱动电机', ['发动机']).ok && L
 t('word both', L.heardWord('驱动电机还是发动机', '驱动电机', ['发动机']).both);
 t('word sentence', L.heardWord('这是动力电池。', '动力电池', ['发动机']).ok);
 
+// Homophone repair is an ASR-text fallback, not spelling correction or pronunciation scoring.
+const speechWord = (text, mode = 'browser-asr', extra = {}) => L.heardWord(text, '驱动电机', ['发动机'], [], { inputMode: mode, ...extra });
+eq('ASR homophone retains transcript and canonical target', speechWord('去动电机'), { ok: true, via: 'sound', heard: '去动电机', input: '驱动电机' });
+t('cloud ASR uses the same bounded repair', speechWord('去动电机', 'cloud-asr').ok);
+for (const mode of [undefined, 'typed', 'chip', 'asr', 'reference-alignment']) t(`homophone disabled for ${mode}`, !L.heardWord('去动电机', '驱动电机', [], [], { inputMode: mode }).ok);
+for (const prefix of ['这是', '那是', '这个是', '那个是']) t(`explicit prefix ${prefix}`, speechWord(`${prefix}去动电机。`).via === 'sound');
+for (const text of ['驱动电机', '这是驱动电机。']) eq(`ordinary ASR ${text}`, speechWord(text), { ok: true });
+for (const text of ['去动电机还是发动机', '驱动电机和发动机', '去动电机发动机', '驱动电机和发冻机', '去动电机和发冻机', '我觉得是去动电机', '不是去动电机', '没有去动电机', '去动电机吗', '去动龘电机', '去动A电机', '去动电机xyz', '去动2电机']) t(`ASR rejects extra/mixed/unknown text: ${text}`, !speechWord(text).ok);
+eq('ASR distractor remains wrong', speechWord('那是发动机'), { ok: false, said: '发动机' });
+const soundDict = { ...D.DICT, '发冻机': ['fā dòng jī', 'ASR text'], '治冻': ['zhì dòng', 'ASR text'], '制动': ['zhì dòng', 'braking'] };
+eq('homophone distractor remains wrong', speechWord('发冻机', 'cloud-asr', { dictionary: soundDict }), { ok: false, said: '发动机', via: 'sound' });
+eq('course dictionary supports a new target', L.heardWord('治冻', '制动', [], [], { inputMode: 'cloud-asr', dictionary: soundDict }), { ok: true, via: 'sound', heard: '治冻', input: '制动' });
+t('course dictionary is authoritative, no global fallback', !speechWord('去动电机', 'cloud-asr', { dictionary: { '驱动电机': D.DICT['驱动电机'] } }).ok);
+t('syllable boundaries are preserved', !L.heardWord('西安', '先', [], [], { inputMode: 'browser-asr', dictionary: { '西安': ["xī ān"], '先': ['xiān'] } }).ok);
+t('unsupported dictionary reading fails closed', !L.heardWord('治冻', '制动', [], [], { inputMode: 'browser-asr', dictionary: { '治冻': ['zhì / dòng'], '制动': ['zhì dòng'] } }).ok);
+
 // 4) 对 / 不是
 t('confirm true', L.judgeConfirm('对。', true).ok);
 t('confirm true shi', L.judgeConfirm('是的', true).ok);

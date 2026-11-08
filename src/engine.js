@@ -156,6 +156,7 @@
       this.id = ++NID; this.pos = [0, 0, 0]; this.rot = [0, 0, 0]; this.scl = [1, 1, 1];
       this.children = []; this.parent = null; this.mesh = null; this.color = [1, 1, 1]; this.emis = [0, 0, 0];
       this.alpha = 1; this.visible = true; this.pick = null; this.grid = 0; this.rim = 0; this.world = M4.ident(); this.name = '';
+      this.matrix = null; this.material = null;
       Object.assign(this, o);
     }
     add(c) { if (c.parent) c.parent.remove(c); c.parent = this; this.children.push(c); return c; }
@@ -164,21 +165,47 @@
     traverse(f) { f(this); for (const c of this.children) c.traverse(f); }
   }
 
+  // Imported base matrices follow the existing editable TRS, so wrappers still animate normally.
+  function updateWorld(scene, parentM = null, visible = true, visit = null) {
+    let local = M4.trs(scene.pos, scene.rot, scene.scl);
+    if (scene.matrix) local = M4.mul(local, scene.matrix);
+    scene.world = parentM ? M4.mul(parentM, local) : local;
+    const shown = visible && scene.visible;
+    if (visit) visit(scene, shown);
+    for (const child of scene.children) updateWorld(child, scene.world, shown, visit);
+  }
+  const determinant3 = m => m[0] * (m[5] * m[10] - m[6] * m[9]) - m[4] * (m[1] * m[10] - m[2] * m[9]) + m[8] * (m[1] * m[6] - m[2] * m[5]);
+  const gpuFail = code => { const error = new Error(code); error.code = code; throw error; };
+
   const hex = (h) => { const n = parseInt(h.replace('#', ''), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 
   // ---------- 渲染器 ----------
-  const VS = `attribute vec3 aP;attribute vec3 aN;uniform mat4 uM;uniform mat4 uVP;uniform mat3 uNM;varying vec3 vN;varying vec3 vW;
-void main(){vec4 w=uM*vec4(aP,1.0);vW=w.xyz;vN=uNM*aN;gl_Position=uVP*w;}`;
-  const FS = `precision mediump float;varying vec3 vN;varying vec3 vW;
+  const VS = `attribute vec3 aP;attribute vec3 aN;attribute vec2 aUV;attribute vec4 aC;attribute vec4 aT;
+uniform mat4 uM;uniform mat4 uVP;uniform mat3 uNM;uniform float uHand;varying vec3 vN;varying vec3 vW;varying vec2 vUV;varying vec4 vC;varying vec4 vT;
+void main(){vec4 w=uM*vec4(aP,1.0);vW=w.xyz;vN=uNM*aN;vUV=aUV;vC=aC;vT=vec4(mat3(uM)*aT.xyz,aT.w*uHand);gl_Position=uVP*w;}`;
+  const FS = `precision mediump float;varying vec3 vN;varying vec3 vW;varying vec2 vUV;varying vec4 vC;varying vec4 vT;
 uniform vec3 uColor;uniform vec3 uEmis;uniform vec3 uLight;uniform vec3 uSky;uniform vec3 uGround;uniform vec3 uFog;uniform vec3 uCam;
 uniform float uAlpha;uniform float uFogN;uniform float uFogF;uniform float uGrid;uniform float uRim;uniform float uBright;
-void main(){vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;
+uniform bool uPBR;uniform bool uUnlit;uniform bool uBase;uniform bool uMR;uniform bool uNormal;uniform bool uAO;uniform bool uET;
+uniform sampler2D uBaseMap;uniform sampler2D uMRMap;uniform sampler2D uNormalMap;uniform sampler2D uAOMap;uniform sampler2D uEMap;
+uniform float uMetal;uniform float uRough;uniform float uNormalScale;uniform float uAOStrength;uniform float uCutoff;uniform float uMode;
+void main(){vec3 n=normalize(vN);
+if(uPBR&&uNormal){vec3 T=normalize(vT.xyz-n*dot(n,vT.xyz));vec3 B=cross(n,T)*vT.w;vec3 mapN=texture2D(uNormalMap,vUV).xyz*2.0-1.0;mapN.xy*=uNormalScale;n=normalize(mat3(T,B,n)*mapN);}
+if(!gl_FrontFacing)n=-n;
 float df=max(dot(n,uLight),0.0);float hm=0.5+0.5*n.y;vec3 amb=mix(uGround,uSky,hm);
 vec3 col=uColor*(amb*0.6+df*0.46)*uBright;
+float a=uAlpha;
+if(uPBR){vec4 base=vec4(uColor,uAlpha)*vC;if(uBase){vec4 tex=texture2D(uBaseMap,vUV);base.rgb*=pow(tex.rgb,vec3(2.2));base.a*=tex.a;}
+if(uMode>0.5&&uMode<1.5&&base.a<uCutoff)discard;a=uMode<1.5?1.0:base.a;
+float metal=uMetal;float rough=uRough;if(uMR){vec4 mr=texture2D(uMRMap,vUV);rough*=mr.g;metal*=mr.b;}
+rough=clamp(rough,0.04,1.0);vec3 view=normalize(uCam-vW);vec3 halfV=normalize(view+uLight);vec3 f0=mix(vec3(0.04),base.rgb,metal);
+float spec=pow(max(dot(n,halfV),0.0),mix(128.0,2.0,rough*rough));float ao=uAO?mix(1.0,texture2D(uAOMap,vUV).r,uAOStrength):1.0;
+col=uUnlit?base.rgb:(base.rgb*(1.0-metal)*(amb*0.6*ao+df*0.46)+f0*(amb*0.22*ao+spec*df*(1.0-rough*0.6)))*uBright;
+vec3 emissive=uUnlit?vec3(0.0):uEmis;if(uET)emissive*=pow(texture2D(uEMap,vUV).rgb,vec3(2.2));col=pow(max(col+emissive,vec3(0.0)),vec3(1.0/2.2));}
 if(uGrid>0.0){vec2 f=abs(fract(vW.xz/uGrid)-0.5);float l=smoothstep(0.462,0.5,max(f.x,f.y));col=mix(col,col*0.82,l);}
 vec3 V=normalize(uCam-vW);float rm=pow(1.0-abs(dot(n,V)),2.2);col+=uRim*rm*vec3(0.30,0.52,0.62);
-col+=uEmis;float d=length(uCam-vW);col=mix(col,uFog,smoothstep(uFogN,uFogF,d));
-float a=uAlpha+uRim*rm*0.35;gl_FragColor=vec4(col,clamp(a,0.0,1.0));}`;
+if(!uPBR)col+=uEmis;float d=length(uCam-vW);col=mix(col,uFog,smoothstep(uFogN,uFogF,d));
+a+=uRim*rm*0.35;gl_FragColor=vec4(col,clamp(a,0.0,1.0));}`;
 
   class Renderer {
     constructor(canvas) {
@@ -193,65 +220,219 @@ float a=uAlpha+uRim*rm*0.35;gl_FragColor=vec4(col,clamp(a,0.0,1.0));}`;
       const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr);
       if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
       this.pr = pr; gl.useProgram(pr);
-      this.a = { p: gl.getAttribLocation(pr, 'aP'), n: gl.getAttribLocation(pr, 'aN') };
+      this.a = { p: gl.getAttribLocation(pr, 'aP'), n: gl.getAttribLocation(pr, 'aN'), uv: gl.getAttribLocation(pr, 'aUV'), c: gl.getAttribLocation(pr, 'aC'), t: gl.getAttribLocation(pr, 'aT') };
       this.u = {};
-      for (const k of ['uM', 'uVP', 'uNM', 'uColor', 'uEmis', 'uLight', 'uSky', 'uGround', 'uFog', 'uCam', 'uAlpha', 'uFogN', 'uFogF', 'uGrid', 'uRim', 'uBright']) this.u[k] = gl.getUniformLocation(pr, k);
+      for (const k of ['uM', 'uVP', 'uNM', 'uColor', 'uEmis', 'uLight', 'uSky', 'uGround', 'uFog', 'uCam', 'uAlpha', 'uFogN', 'uFogF', 'uGrid', 'uRim', 'uBright', 'uHand', 'uPBR', 'uUnlit', 'uBase', 'uMR', 'uNormal', 'uAO', 'uET', 'uBaseMap', 'uMRMap', 'uNormalMap', 'uAOMap', 'uEMap', 'uMetal', 'uRough', 'uNormalScale', 'uAOStrength', 'uCutoff', 'uMode']) this.u[k] = gl.getUniformLocation(pr, k);
+      this.meshes = new Map(); this.textures = new Map(); this.vao = this.webgl2 ? gl.createVertexArray() : null;
+      this.uint32 = this.webgl2 || !!gl.getExtension('OES_element_index_uint');
+      this.info = { render: { calls: 0, triangles: 0, points: 0, splatCalls: 0 }, memory: { geometries: 0, textures: 0, geometryBytes: 0, textureBytes: 0 } };
       this.env = { light: V3.norm([0.45, 0.85, 0.35]), sky: hex('#fff4e2'), ground: hex('#a8977c'), fog: hex('#efe7d8'), fogN: 22, fogF: 60, bright: 1, clear: hex('#efe7d8') };
       gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       this.w = 1; this.h = 1;
     }
     resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2), c = this.canvas;
+      const dpr = Math.min(G.devicePixelRatio || 1, 2), c = this.canvas;
       const w = Math.max(1, Math.floor(c.clientWidth * dpr)), h = Math.max(1, Math.floor(c.clientHeight * dpr));
       if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
       this.w = w; this.h = h; this.gl.viewport(0, 0, w, h);
     }
+    meshPlan(m) {
+      if (m.disposed) gpuFail('model_disposed');
+      if (!(m.p instanceof Float32Array) || !(m.n instanceof Float32Array) || m.p.length !== m.n.length || !m.p.length || m.p.length % 3 || m.count !== m.p.length / 3) gpuFail('model_invalid_geometry');
+      const sizes = { uv: 2, c: 4, t: 4 };
+      for (const key of Object.keys(sizes)) if (m[key] && (!(m[key] instanceof Float32Array) || m[key].length !== m.count * sizes[key])) gpuFail('model_invalid_geometry');
+      if (m.i && (!(m.i instanceof Uint16Array || m.i instanceof Uint32Array) || !m.i.length || m.i.length % 3)) gpuFail('model_invalid_indices');
+      if (m.i instanceof Uint32Array && !this.uint32) gpuFail('model_uint32_indices_unsupported');
+      if (!m.i && m.count % 3) gpuFail('model_invalid_geometry');
+      if (m.i) for (const index of m.i) if (index >= m.count) gpuFail('model_invalid_indices');
+      let bytes = 0;
+      for (const key of ['p', 'n', 'uv', 'c', 't', 'i']) if (m[key]) bytes += m[key].byteLength;
+      return { bytes };
+    }
+    checkUpload() {
+      const gl = this.gl, error = gl.getError();
+      if (error !== gl.NO_ERROR) gpuFail(error === gl.OUT_OF_MEMORY ? 'model_gpu_out_of_memory' : 'model_gpu_upload_failed');
+    }
     upload(m) {
       const gl = this.gl;
-      m.buf = { p: gl.createBuffer(), n: gl.createBuffer() };
-      gl.bindBuffer(gl.ARRAY_BUFFER, m.buf.p); gl.bufferData(gl.ARRAY_BUFFER, m.p, gl.STATIC_DRAW);
-      gl.bindBuffer(gl.ARRAY_BUFFER, m.buf.n); gl.bufferData(gl.ARRAY_BUFFER, m.n, gl.STATIC_DRAW);
+      this.meshPlan(m);
+      if (this.meshes.has(m)) return this.meshes.get(m);
+      const buffers = { bytes: 0 };
+      try {
+        for (const key of ['p', 'n', 'uv', 'c', 't', 'i']) if (m[key]) {
+          const target = key === 'i' ? gl.ELEMENT_ARRAY_BUFFER : gl.ARRAY_BUFFER;
+          buffers[key] = gl.createBuffer(); if (!buffers[key]) gpuFail('model_gpu_out_of_memory');
+          gl.bindBuffer(target, buffers[key]); gl.bufferData(target, m[key], gl.STATIC_DRAW); buffers.bytes += m[key].byteLength;
+        }
+        this.checkUpload();
+      } catch (error) {
+        for (const key of ['p', 'n', 'uv', 'c', 't', 'i']) if (buffers[key]) gl.deleteBuffer(buffers[key]);
+        throw error;
+      }
+      this.meshes.set(m, buffers); m.buf = buffers;
+      this.info.memory.geometries = this.meshes.size; this.info.memory.geometryBytes += buffers.bytes;
+      return buffers;
+    }
+    texturePlan(texture) {
+      if (texture.disposed) gpuFail('model_disposed');
+      const gl = this.gl, sampler = texture.sampler || {};
+      const image = texture.image; let width = image?.width, height = image?.height;
+      const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 || width > max || height > max) gpuFail('model_texture_size_unsupported');
+      const pot = n => (n & (n - 1)) === 0;
+      const resize = !this.webgl2 && (!pot(width) || !pot(height));
+      if (resize) {
+        width = 2 ** Math.ceil(Math.log2(width)); height = 2 ** Math.ceil(Math.log2(height));
+        if (width > max || height > max || (typeof G.OffscreenCanvas !== 'function' && !G.document?.createElement)) gpuFail('model_npot_texture_unsupported');
+      }
+      for (const [key, valid] of Object.entries({ magFilter: [9728,9729], minFilter: [9728,9729,9984,9985,9986,9987], wrapS: [33071,33648,10497], wrapT: [33071,33648,10497] })) if (sampler[key] !== undefined && !valid.includes(sampler[key])) gpuFail('model_invalid_sampler');
+      const min = sampler.minFilter ?? gl.LINEAR_MIPMAP_LINEAR, mip = ![gl.NEAREST, gl.LINEAR].includes(min);
+      return { width, height, resize, min, mip, bytes: Math.ceil(width * height * 4 * (mip ? 4 / 3 : 1)) };
+    }
+    texture(texture) {
+      if (texture.disposed) gpuFail('model_disposed');
+      if (this.textures.has(texture)) return this.textures.get(texture).handle;
+      const gl = this.gl, sampler = texture.sampler || {}, plan = this.texturePlan(texture);
+      let image = texture.image; const { width, height, min, mip, bytes } = plan;
+      if (plan.resize) {
+        const canvas = typeof G.OffscreenCanvas === 'function' ? new G.OffscreenCanvas(width, height) : G.document?.createElement('canvas');
+        if (!canvas) gpuFail('model_npot_texture_unsupported');
+        canvas.width = width; canvas.height = height; canvas.getContext('2d').drawImage(image, 0, 0, width, height); image = canvas;
+      }
+      const handle = gl.createTexture(); if (!handle) gpuFail('model_gpu_out_of_memory');
+      const unpack = [gl.UNPACK_FLIP_Y_WEBGL, gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, gl.UNPACK_COLORSPACE_CONVERSION_WEBGL].map(k => [k, gl.getParameter(k)]);
+      try {
+        gl.bindTexture(gl.TEXTURE_2D, handle);
+        // glTF UV origin is top-left. No browser Y flip, premultiplication or color conversion.
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter ?? gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS ?? gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT ?? gl.REPEAT);
+        if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+        this.checkUpload();
+      } catch (error) { gl.deleteTexture(handle); throw error; }
+      finally { for (const [key, value] of unpack) gl.pixelStorei(key, value); }
+      this.textures.set(texture, { handle, bytes }); this.info.memory.textures = this.textures.size; this.info.memory.textureBytes += bytes;
+      return handle;
+    }
+    /**
+     * Synchronous transaction before replacing a visible character. Validates the entire subtree,
+     * then uploads its resources without drawing or modifying nodes/matrices. On failure only
+     * newly allocated resources are removed; existing scenes and WebGL bindings are preserved.
+     * Returns the counts/estimated GPU bytes newly allocated by this call (shared resources excluded).
+     * Errors carry code, e.g. model_texture_size_unsupported / model_gpu_out_of_memory.
+     */
+    prepareScene(root) {
+      if (!root || typeof root.traverse !== 'function') gpuFail('model_invalid_scene');
+      const gl = this.gl, meshes = new Set(), textures = new Set();
+      if (gl.isContextLost?.()) gpuFail('model_context_lost');
+      root.traverse(node => {
+        if (!node.mesh) return;
+        this.meshPlan(node.mesh); if (!this.meshes.has(node.mesh)) meshes.add(node.mesh);
+        for (const key of ['baseColorTexture', 'metallicRoughnessTexture', 'normalTexture', 'occlusionTexture', 'emissiveTexture']) {
+          const texture = node.material?.[key]; if (!texture) continue;
+          if (texture.disposed) gpuFail('model_disposed');
+          if (!this.textures.has(texture)) { this.texturePlan(texture); textures.add(texture); }
+        }
+      });
+      const before = { ...this.info.memory }, existingMeshes = new Set(this.meshes.keys()), existingTextures = new Set(this.textures.keys());
+      const bindings = { array: gl.getParameter(gl.ARRAY_BUFFER_BINDING), element: gl.getParameter(gl.ELEMENT_ARRAY_BUFFER_BINDING), active: gl.getParameter(gl.ACTIVE_TEXTURE), texture: gl.getParameter(gl.TEXTURE_BINDING_2D) };
+      this.checkUpload();
+      try {
+        for (const mesh of meshes) this.upload(mesh);
+        for (const texture of textures) this.texture(texture);
+        return { geometries: this.info.memory.geometries - before.geometries, textures: this.info.memory.textures - before.textures,
+          geometryBytes: this.info.memory.geometryBytes - before.geometryBytes, textureBytes: this.info.memory.textureBytes - before.textureBytes };
+      } catch (error) {
+        for (const mesh of this.meshes.keys()) if (!existingMeshes.has(mesh)) this.disposeMesh(mesh);
+        for (const texture of this.textures.keys()) if (!existingTextures.has(texture)) this.disposeTexture(texture);
+        throw error;
+      } finally {
+        gl.bindBuffer(gl.ARRAY_BUFFER, bindings.array); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bindings.element);
+        gl.activeTexture(bindings.active); gl.bindTexture(gl.TEXTURE_2D, bindings.texture);
+      }
+    }
+    prepareModel(modelOrRoot) { return this.prepareScene(modelOrRoot?.root || modelOrRoot); }
+    disposeMesh(mesh) {
+      const buffers = this.meshes.get(mesh); if (!buffers) return;
+      for (const k of ['p', 'n', 'uv', 'c', 't', 'i']) if (buffers[k]) this.gl.deleteBuffer(buffers[k]);
+      this.meshes.delete(mesh); if (mesh.buf === buffers) mesh.buf = null;
+      this.info.memory.geometryBytes -= buffers.bytes; this.info.memory.geometries = this.meshes.size;
+    }
+    disposeTexture(texture) {
+      const stored = this.textures.get(texture); if (!stored) return;
+      this.gl.deleteTexture(stored.handle); this.textures.delete(texture);
+      this.info.memory.textureBytes -= stored.bytes; this.info.memory.textures = this.textures.size;
+    }
+    dispose() {
+      for (const mesh of this.meshes.keys()) this.disposeMesh(mesh);
+      for (const texture of this.textures.keys()) this.disposeTexture(texture);
+      if (this.vao) this.gl.deleteVertexArray(this.vao); this.gl.deleteProgram(this.pr);
     }
     render(scene, cam) {
       const gl = this.gl, u = this.u, e = this.env;
       this.resize();
       const aspect = this.w / this.h;
       cam.update(aspect);
+      Object.assign(this.info.render, { calls: 0, triangles: 0, points: 0, splatCalls: 0 });
+      gl.useProgram(this.pr); if (this.webgl2) gl.bindVertexArray(this.vao);
+      gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
       // 世界矩阵
       const items = [];
-      const walk = (n, parentM, vis) => {
-        n.world = parentM ? M4.mul(parentM, M4.trs(n.pos, n.rot, n.scl)) : M4.trs(n.pos, n.rot, n.scl);
-        const v = vis && n.visible;
-        if (v && n.mesh) items.push(n);
-        for (const c of n.children) walk(c, n.world, v);
-      };
-      walk(scene, null, true);
+      updateWorld(scene, null, true, (n, v) => { if (v && n.mesh && !n.mesh.disposed) items.push(n); });
       gl.clearColor(e.clear[0], e.clear[1], e.clear[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.uniformMatrix4fv(u.uVP, false, cam.vp);
       gl.uniform3fv(u.uLight, e.light); gl.uniform3fv(u.uSky, e.sky); gl.uniform3fv(u.uGround, e.ground); gl.uniform3fv(u.uFog, e.fog);
       gl.uniform3fv(u.uCam, cam.eye); gl.uniform1f(u.uFogN, e.fogN); gl.uniform1f(u.uFogF, e.fogF); gl.uniform1f(u.uBright, e.bright);
       const opaque = [], trans = [];
-      for (const n of items) (n.alpha < 0.999 || n.rim > 0 ? trans : opaque).push(n);
+      for (const n of items) ((n.material ? n.material.alphaMode === 'BLEND' : n.alpha < 0.999) || n.rim > 0 ? trans : opaque).push(n);
+      let lastMaterial;
       const draw = (n) => {
-        const m = n.mesh; if (!m.buf) this.upload(m);
-        gl.bindBuffer(gl.ARRAY_BUFFER, m.buf.p); gl.enableVertexAttribArray(this.a.p); gl.vertexAttribPointer(this.a.p, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, m.buf.n); gl.enableVertexAttribArray(this.a.n); gl.vertexAttribPointer(this.a.n, 3, gl.FLOAT, false, 0, 0);
+        if (this.webgl2) gl.bindVertexArray(this.vao);
+        const m = n.mesh, buffers = this.meshes.get(m) || this.upload(m), mat = n.material;
+        for (const [key, size] of [['p', 3], ['n', 3], ['uv', 2], ['c', 4], ['t', 4]]) {
+          const location = this.a[key];
+          if (buffers[key]) { gl.bindBuffer(gl.ARRAY_BUFFER, buffers[key]); gl.enableVertexAttribArray(location); gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0); }
+          else { gl.disableVertexAttribArray(location); gl.vertexAttrib4f(location, key === 'c' || key === 't' ? 1 : 0, key === 'c' ? 1 : 0, key === 'c' ? 1 : 0, 1); }
+        }
+        const hand = determinant3(n.world) < 0 ? -1 : 1; gl.frontFace(hand < 0 ? gl.CW : gl.CCW);
+        if (mat && !mat.doubleSided) { gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); } else gl.disable(gl.CULL_FACE);
+        gl.uniform1f(u.uHand, hand);
+        if (mat !== lastMaterial) {
+          gl.uniform1i(u.uPBR, !!mat); gl.uniform1i(u.uUnlit, !!mat?.unlit);
+          for (const [unit, key, enabled, uniform] of [[0, 'baseColorTexture', 'uBase', 'uBaseMap'], [1, 'metallicRoughnessTexture', 'uMR', 'uMRMap'], [2, 'normalTexture', 'uNormal', 'uNormalMap'], [3, 'occlusionTexture', 'uAO', 'uAOMap'], [4, 'emissiveTexture', 'uET', 'uEMap']]) {
+            gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, mat?.[key] ? this.texture(mat[key]) : null);
+            gl.uniform1i(u[enabled], !!mat?.[key]); gl.uniform1i(u[uniform], unit);
+          }
+          gl.uniform1f(u.uMetal, mat?.metallicFactor ?? 0); gl.uniform1f(u.uRough, mat?.roughnessFactor ?? 1);
+          gl.uniform1f(u.uNormalScale, mat?.normalScale ?? 1); gl.uniform1f(u.uAOStrength, mat?.occlusionStrength ?? 1);
+          gl.uniform1f(u.uCutoff, mat?.alphaCutoff ?? 0.5); gl.uniform1f(u.uMode, mat?.alphaMode === 'BLEND' ? 2 : mat?.alphaMode === 'MASK' ? 1 : 0);
+          lastMaterial = mat;
+        }
         gl.uniformMatrix4fv(u.uM, false, n.world); gl.uniformMatrix3fv(u.uNM, false, M4.normal(n.world));
         gl.uniform3fv(u.uColor, n.color); gl.uniform3fv(u.uEmis, n.emis); gl.uniform1f(u.uAlpha, n.alpha); gl.uniform1f(u.uGrid, n.grid); gl.uniform1f(u.uRim, n.rim);
-        gl.drawArrays(gl.TRIANGLES, 0, m.count);
+        if (buffers.i) { gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.i); gl.drawElements(gl.TRIANGLES, m.i.length, m.i instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT, 0); }
+        else gl.drawArrays(gl.TRIANGLES, 0, m.count);
+        this.info.render.calls++; this.info.render.triangles += (m.i ? m.i.length : m.count) / 3;
       };
       gl.disable(gl.BLEND); gl.depthMask(true);
       for (const n of opaque) draw(n);
-      if (this.splat) { this.splat.draw(cam, this); gl.useProgram(this.pr); }
+      if (this.splat) {
+        gl.disable(gl.CULL_FACE); gl.frontFace(gl.CCW); this.splat.draw(cam, this); gl.useProgram(this.pr); lastMaterial = undefined;
+        if (this.splat.n && this.splat.visible !== false) { this.info.render.splatCalls = 1; this.info.render.calls++; this.info.render.points = this.splat.n; }
+      }
       if (trans.length) {
         const ce = cam.eye;
-        for (const n of trans) { const p = n.worldPos(); n._d = (p[0] - ce[0]) ** 2 + (p[1] - ce[1]) ** 2 + (p[2] - ce[2]) ** 2; }
+        for (const n of trans) { const p = n.worldPos(n.mesh.min.map((v, i) => (v + n.mesh.max[i]) / 2)); n._d = (p[0] - ce[0]) ** 2 + (p[1] - ce[1]) ** 2 + (p[2] - ce[2]) ** 2; }
         trans.sort((a, b) => b._d - a._d);
         gl.enable(gl.BLEND); gl.depthMask(false);
         for (const n of trans) draw(n);
         gl.depthMask(true); gl.disable(gl.BLEND);
       }
+      gl.disable(gl.CULL_FACE); gl.frontFace(gl.CCW); gl.activeTexture(gl.TEXTURE0);
+      if (this.webgl2) gl.bindVertexArray(null);
       this.items = items;
     }
     // 射线拾取：返回最近的带 pick 的节点（沿父链查找 pick）
@@ -261,7 +442,7 @@ float a=uAlpha+uRim*rm*0.35;gl_FragColor=vec4(col,clamp(a,0.0,1.0));}`;
       let best = null, bestT = Infinity;
       for (const n of this.items || []) {
         let owner = n; while (owner && !owner.pick) owner = owner.parent;
-        if (!owner || n.alpha < 0.05 && !n.rim) continue;
+        if (!owner || n.alpha < 0.05 && !n.rim || Math.abs(determinant3(n.world)) < 1e-12) continue;
         const iw = M4.invert(n.world), o = M4.point(iw, p0), e = M4.point(iw, p1), d = V3.sub(e, o);
         const { min, max } = n.mesh; let t0 = 0, t1 = 1, hit = true;
         for (let k = 0; k < 3; k++) {
@@ -333,5 +514,6 @@ float a=uAlpha+uRim*rm*0.35;gl_FragColor=vec4(col,clamp(a,0.0,1.0));}`;
     });
   }
 
-  G.E = { V3, M4, Prim, Node, Renderer, Camera, orbitControls, tween, stepTweens, camTo, ease, hex };
+  G.E = { V3, M4, Prim, Node, Renderer, Camera, orbitControls, tween, stepTweens, camTo, ease, hex, updateWorld };
+  if (typeof module !== 'undefined') module.exports = G.E;
 })(typeof window !== 'undefined' ? window : globalThis);

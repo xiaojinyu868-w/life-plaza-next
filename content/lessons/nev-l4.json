@@ -6199,7 +6199,7 @@
                 "line": {
                   "zh": "插电式混合动力汽车有动力电池，对吧？",
                   "en": "A plug-in hybrid has a power battery, right?",
-                  "teacher": "插电后王明换成口语更常用的“对吧”，学员要听得懂。"
+                  "teacher": "请学员听懂‘对吧’这一确认说法；本课独立表达仍练习‘对吗’。"
                 },
                 "options": {
                   "seal": "ct-dbm"
@@ -7739,7 +7739,7 @@
               "line": {
                 "zh": "请你插电！",
                 "en": "Please plug it in!",
-                "teacher": "动作指令：学员点充电枪（或说“插电”）。插上后，语料库接通。"
+                "teacher": "请学员点充电枪或说‘插电’，将语言与动作对应起来。插上后展示本课语料快照。"
               }
             },
             {
@@ -7854,7 +7854,7 @@
               "line": {
                 "zh": "你看，货架上多了这些词。",
                 "en": "Look — the shelf has new words now.",
-                "teacher": "插电后：货架长出真实语料里的搭配，点任一个看出处。"
+                "teacher": "让学员点货架上的搭配看来源，再选一个词说一说。"
               },
               "options": {
                 "seal": "fq-dlc-tb"
@@ -8170,7 +8170,7 @@
           "line": {
             "zh": "哪个对？",
             "en": "Which one is right?",
-            "teacher": "【辨】两句话选一句。插电前后，错误的那一句不一样。"
+            "teacher": "【辨】先让学员选一句，再请他指出‘也’应该放在哪里。"
           }
         },
         {
@@ -8324,7 +8324,7 @@
               "line": {
                 "zh": "纯电动汽车是新能源汽车，也插电式混合动力汽车是新能源汽车，对吗？",
                 "en": "BEVs are new energy vehicles, also plug-in hybrids are new energy vehicles, right?",
-                "teacher": "小龙故意说错。已插电：错句来自学习者真实偏误（“也”在主语前）。"
+                "teacher": "请学员纠正小龙。这句车间练习依据学习者偏误样例改写，原句可点‘语’查看。"
               },
               "options": {
                 "seal": "ln-ye-1"
@@ -8338,7 +8338,7 @@
               "line": {
                 "zh": "纯电动汽车是新能源汽车，也插电式混合动力汽车是新能源汽车，对吗？",
                 "en": "BEVs are new energy vehicles, also plug-in hybrids are new energy vehicles, right?",
-                "teacher": "固定课堂练习；使用已核实的“也”在主语前的错法（ln-ye-1场景改写），未插电时不显示语料扩展。"
+                "teacher": "请学员纠正小龙，把‘也’放到合适的位置。使用同一场景改写，当前不显示语料扩展。"
               }
             }
           ]
@@ -8594,7 +8594,7 @@
               "line": {
                 "zh": "我听说，后面的课还有动力电池系统，还有驱动电机外壳！",
                 "en": "I heard later lessons have “power battery system” and “driving motor housing”!",
-                "teacher": "插电后：小龙知道这本书后面会学到的搭配（教材库频次）。"
+                "teacher": "请学员观察搭配的共同部分，选一个解释给小龙听；来源卡保留快照记录。"
               },
               "options": {
                 "seal": "fq-dlc-tb"
@@ -8608,7 +8608,7 @@
               "line": {
                 "zh": "电……还有吗？",
                 "en": "Electric… anything else?",
-                "teacher": "未插电：小龙没有数据可说。"
+                "teacher": "请学员选一个学过的搭配，解释给小龙听。"
               }
             }
           ]

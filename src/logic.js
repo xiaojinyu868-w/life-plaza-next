@@ -36,14 +36,59 @@
     return false;
   }
 
+  // Dictionary readings are used only to compare ASR text, never to score pronunciation.
+  function readingSyllables(py, count) {
+    if (typeof py !== 'string') return null;
+    const syllable = /(?:zh|ch|sh|[bpmfdtnlgkhjqxrzcswy])?[aāáǎàeēéěèiīíǐìoōóǒòuūúǔùüǖǘǚǜv]+(?:ng|n|r)?[1-5]?/gy;
+    const out = [];
+    for (const chunk of py.trim().toLowerCase().split(/[\s'’]+/)) {
+      let at = 0;
+      while (at < chunk.length) {
+        syllable.lastIndex = at; const m = syllable.exec(chunk);
+        // Ambiguous/unsupported readings fail closed; no unknown character is discarded.
+        if (!m || (m[0].match(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g) || []).length > 1) return null;
+        out.push(plainPy(m[0])); at = syllable.lastIndex;
+      }
+    }
+    return out.length === count ? out : null;
+  }
+  function wordSounds(word, dictionary) {
+    if (!/^[㐀-鿿]+$/.test(word)) return null;
+    const sounds = []; let at = 0;
+    while (at < word.length) {
+      let entry = null, width = 0;
+      for (let size = word.length - at; size > 0; size--) {
+        const key = word.slice(at, at + size);
+        if (Object.prototype.hasOwnProperty.call(dictionary, key)) { entry = dictionary[key]; width = size; break; }
+      }
+      const reading = entry && readingSyllables(entry[0], width);
+      if (!reading) return null;
+      sounds.push(...reading); at += width;
+    }
+    return sounds.join('|');
+  }
   // ---- 说出一个词（认 / 辨 / 说）。支持汉字或无声调拼音 ----
-  function heardWord(input, target, others = [], alts = []) {
+  function heardWord(input, target, others = [], alts = [], options = {}) {
     const n = norm(input);
+    const dictionary = options.dictionary || D.DICT;
     if (!n) return { ok: false, empty: true };
+    if (['browser-asr', 'cloud-asr'].includes(options.inputMode) && CJK.test(n)) {
+      const word = n.replace(/^(这个是|那个是|这是|那是)/, '');
+      if ([target, ...alts].some(w => word === norm(w))) return { ok: true };
+      const said = others.find(w => word === norm(w));
+      if (said) return { ok: false, said };
+      const sound = wordSounds(word, dictionary);
+      if (!sound) return { ok: false };
+      // The entire word must match. Mixed answers and extra words cannot match a fragment.
+      const other = others.find(w => sound === wordSounds(norm(w), dictionary));
+      if (other) return { ok: false, said: other, via: 'sound' };
+      if ([target, ...alts].some(w => sound === wordSounds(norm(w), dictionary))) return { ok: true, via: 'sound', heard: input, input: target };
+      return { ok: false };
+    }
     if (!CJK.test(n)) {
       const p = n.replace(/[0-9]/g, '');
-      for (const w of [target, ...alts]) if (D.DICT[w] && p === plainPy(D.DICT[w][0])) return { ok: true, via: 'pinyin' };
-      for (const o of others) if (D.DICT[o] && p === plainPy(D.DICT[o][0])) return { ok: false, said: o };
+      for (const w of [target, ...alts]) if (dictionary[w] && p === plainPy(dictionary[w][0])) return { ok: true, via: 'pinyin' };
+      for (const o of others) if (dictionary[o] && p === plainPy(dictionary[o][0])) return { ok: false, said: o };
       return { ok: false };
     }
     const hasT = [target, ...alts].some((w) => n.includes(norm(w)));

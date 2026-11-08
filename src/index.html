@@ -26,6 +26,7 @@
     <button type="button" data-t="about">数据</button>
     <button type="button" data-t="online" aria-pressed="false" title="联网增强与语料插电是两个独立开关">离线</button>
     <button type="button" data-t="ask">问师傅</button>
+    <button type="button" data-t="character" class="hidden">小龙</button>
     <button type="button" data-t="dashboard">课堂概览</button>
   </div>
 </div>
@@ -67,6 +68,7 @@
     <div class="seal-big">语</div>
     <h1>插电工坊 · 学中文<small>Plug-in Workshop · Vocational Chinese in 3D</small></h1>
     <label class="lesson-picker">本次课堂 / Lesson <select id="lessonSelect" aria-label="选择课程"></select></label>
+    <label class="lesson-picker hidden" id="characterPicker">学习伙伴 / Companion <select id="characterSelect" aria-label="选择小龙形象"></select></label>
     <p class="ll-lead">走进新能源汽车实训车间，跟王明师傅学《认识插电式混合动力汽车》。说对中文，零件才会动；最后你来当师傅，教新来的学徒小龙。<br>
       Walk into an EV workshop with master Wang Ming. Say it in Chinese and the parts move. Then you become the master and teach Xiaolong.<br>
       <b style="color:#ffd9b0">车间里有一根“语料库充电枪”：插上，课本之外的真实语料就接进来了。</b></p>
@@ -74,9 +76,9 @@
       <button type="button" class="ll-level" data-lv="1"><b>HSK 1</b><span>Just starting · English page</span></button>
       <button type="button" class="ll-level" data-lv="2"><b>HSK 2</b><span>Simple everyday talk · English page</span></button>
       <button type="button" class="ll-level" data-lv="3"><b>HSK 3</b><span>Everyday topics · English page</span></button>
-      <button type="button" class="ll-level ll-teach" data-lv="t"><b>教师演示 · 对照模式</b><span>中文提示 + 对照面板：同一步插电前后的差别并排显示（适合录对比视频）</span></button>
+      <button type="button" class="ll-level ll-teach" data-lv="t"><b>教师演示 · 完整课堂</b><span>跟随教学提示走完一课：认识零件、练句式、教小龙、完成出厂任务</span></button>
     </div>
-    <div class="ll-gate-foot">词语等级：HSK 3.0 syllabus data by Gushi（gushichinese.com/hsk-3.0/downloads），CC BY-SA 4.0 · 第4课语料来自交付包快照（标注检索日期 2026-11-07/08），本次未重新回源核验。第5课为自编试课样例，待教师审阅。<br>建议用 Edge 或 Chrome 打开；默认离线，可打字、输入拼音或点选。启用联机和麦克风前会说明音频去向。</div>
+    <div class="ll-gate-foot">词语等级：官方《HSK考试大纲》2025-11版；辅助拼音与英文：Gushi，CC BY-SA 4.0 · 第4课语料来自交付包快照（标注检索日期 2026-11-07/08），本次未重新回源核验。第5课为自编试课样例，待教师审阅。<br>建议用 Edge 或 Chrome 打开；默认离线，可打字、输入拼音或点选。启用联机和麦克风前会说明音频去向。</div>
   </div>
 </div>
 

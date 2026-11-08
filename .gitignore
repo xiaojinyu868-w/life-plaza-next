@@ -11,10 +11,16 @@ attachments/
 recordings/
 00_技术任务书.docx
 交给技术人员_深化包.zip
+交给技术人员_深化包(1).zip
+t10.html
+插电工坊_3D中文课设计方案_v0.2.docx
+插电工坊_演示与录视频手册.docx
+变更记录.md
 
 # Generated files
 node_modules/
 dist/
+deliverables/
 artifacts/
 *.log
 __pycache__/

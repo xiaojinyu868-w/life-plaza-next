@@ -1,0 +1,32 @@
+{
+  "id": "t10-world-low",
+  "label": "t10 古风室内示例（非汽车车间）",
+  "classification": "traditional-chinese-interior",
+  "automotiveWorkshop": false,
+  "source": {
+    "kind": "user-provided-html-embedded-asset",
+    "file": "t10.html",
+    "sha256": "d58cb3386db1f06ddf77cf450ac97e58f94f89b486d0a2a6c874bcafbd1b566b",
+    "originalAssetName": "world-low.spz",
+    "extraction": "Static JSON and canonical base64 only; original HTML scripts were not executed."
+  },
+  "asset": {
+    "file": "t10-world-low.spz",
+    "format": "spz",
+    "version": 2,
+    "points": 98304,
+    "bytes": 1364352,
+    "sha256": "90901a27839007aee2f4bc36eee13221cd50dee98c796f77ed1f93a51ab9bf3e"
+  },
+  "embeddedMetadata": null,
+  "embeddedPlacement": null,
+  "metricScale": null,
+  "placementStatus": "Unknown: source embeds null; previous browser localStorage is unavailable. Heuristic candidates are not source placement.",
+  "visualReview": {
+    "date": "2026-11-09",
+    "method": "Current trusted renderer in isolated Edge preview; all 98304 points drawn, WebGL error 0.",
+    "observed": "木架、罐与箩筐、木格门窗、圆形门洞和庭院；不是汽车实训车间。",
+    "identityLimit": "未确认具体名称。ZIP中的药铺文字仅是线索；ZIP无可比较的点云资产，不能据此证明同源。"
+  },
+  "acceptance": "Extracted and visually reviewed example only; not workshop composition, metric calibration, or integrated-product acceptance."
+}

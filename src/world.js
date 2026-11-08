@@ -221,10 +221,13 @@
     // 轮胎堆
     for (let i = 0; i < 4; i++) shell.add(part(cyl(0.4, 0.4, 0.26, 16), C.tire, { pos: [-13.5, 0.13 + i * 0.27, 3.8] }));
     // 举升机
+    // 立柱挡在镜头和车之间时由 app.js 的 fadeOccluders() 调成半透明
+    W.occluders = [];
     for (const z of [1.42, -1.42]) {
       root.add(part(box(0.6, 0.05, 0.6), C.steelD, { pos: [0, 0.025, z] }));
-      root.add(part(box(0.28, 3.1, 0.28), C.zhu, { pos: [0, 1.55, z] }));
-      root.add(part(box(0.36, 0.1, 0.36), C.ink, { pos: [0, 3.1, z] }));
+      const col = root.add(part(box(0.28, 3.1, 0.28), C.zhu, { pos: [0, 1.55, z] }));
+      const top = root.add(part(box(0.36, 0.1, 0.36), C.ink, { pos: [0, 3.1, z] }));
+      W.occluders.push({ nodes: [col, top], a: 1 });
     }
     W.liftY = 0.85;
     W.arms = [];

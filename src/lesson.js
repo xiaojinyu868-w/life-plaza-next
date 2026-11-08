@@ -159,7 +159,7 @@
     Object.keys(lesson.pools).forEach(visit);
     return { ok: true, steps: seenSteps.size, stations: ids.size };
   }
-  function diagnose(ch, t, chip, ctx, lesson) {
+  function diagnose(ch, t, chip, ctx, lesson, attempt = {}) {
     const n = L.norm(t);
     if (ch.type === 'word') {
       if (ch.selfReport && chip && t === ch.selfReport) return { ok: true, selfReported: true };
@@ -167,7 +167,7 @@
       let input = t;
       // Let the existing word checker handle new lesson vocabulary, including its pinyin.
       if (!/[㐀-鿿]/.test(t)) for (const w of [ch.target, ...alts, ...(ch.others || [])]) if (lesson.dict[w] && L.plainPy(t) === L.plainPy(lesson.dict[w][0])) { input = w; break; }
-      return L.heardWord(input, ch.target, ch.others || [], alts);
+      return L.heardWord(input, ch.target, ch.others || [], alts, { dictionary: lesson.dict, inputMode: chip ? undefined : attempt.inputMode });
     }
     if (ch.type === 'confirm') return L.judgeConfirm(t, ch.truth, ch.fixes || []);
     if (ch.type === 'yeItem') { const slot = /^#slot(\d+)$/.exec(t); if (slot && Number(slot[1]) >= ch.item.cats.length) return { ok: false, mismatch: true, cat: 'none', slot: -1 }; return L.judgeYeItem(ch.item, slot ? Number(slot[1]) : t); }
@@ -205,11 +205,11 @@
         else if (c.op === 'ask') {
           const cfg = resolve(c.cfg, context); let attemptQueue = Promise.resolve(), last = null, closed = false, attempts = 0;
           cfg.step = c.id;
-          cfg.check = (text, chip = false) => {
+          cfg.check = (text, chip = false, attempt = {}) => {
             if (closed) throw new Error('Closed lesson prompt'); if (++attempts > 500) fail(c.id, 'attempt budget exceeded'); refresh();
             const input = String(text || '').trim();
             const local = { state: { ...state }, input, normalized: L.norm(input), chip: !!chip, answer: cfg.answer || '', result: {} };
-            const r = diagnose(c.check, input, chip, local, lesson); local.result = r;
+            const r = diagnose(c.check, input, chip, local, lesson, attempt); local.result = r;
             const f = c.feedback.find(f => !f.when || condition(f.when, local));
             if (f) {
               r.msg = resolve(f.msg, local); if (f.seal && state.plugged) r.seal = f.seal;
@@ -222,6 +222,10 @@
                   if (state.plugged && sugs[0]?.ev) r.seal = sugs[0].ev;
                 }
               }
+            }
+            if (r.ok && r.via === 'sound') {
+              r.msg = `识别文字可能不同；这里写作“${r.input}”。可以再跟读一次。`;
+              delete r.seal;
             }
             last = local;
             if (c.attempt) attemptQueue = attemptQueue.then(() => execute(c.attempt, local));

@@ -27,6 +27,48 @@ test('read-only prompt inspection uses real lesson checks and cannot cross stati
   assert.equal(R.inspectPrompt(l5, { station: 'a', step: 'recog-engine', input: '发动机' }), null);
   assert.equal(JSON.stringify(l4), before);
 });
+
+test('word checks accept only explicit ASR metadata, preserve raw input and give no pronunciation verdict', async () => {
+  let checked = false;
+  await R.run(l4, { station(){}, say(){}, action(){}, finish(){}, async ask(cfg) {
+    if (cfg.step === 'choose-motor') {
+      checked = true;
+      assert.equal(cfg.check('去动电机', false).ok, false);
+      assert.equal(cfg.check('去动电机', false, { inputMode:'typed' }).ok, false);
+      assert.equal(cfg.check('去动电机', true, { inputMode:'browser-asr' }).ok, false);
+      assert.equal(cfg.check('去动电机和发动机', false, { inputMode:'cloud-asr' }).ok, false);
+      assert.equal(cfg.check('去动龘电机', false, { inputMode:'browser-asr' }).ok, false);
+      const text = '这是去动电机。', r = cfg.check(text, false, { inputMode:'browser-asr' });
+      assert.equal(r.ok, true); assert.equal(r.via, 'sound'); assert.equal(r.heard, text); assert.equal(r.input, '驱动电机');
+      assert.match(r.msg, /识别文字可能不同/); assert.match(r.msg, /驱动电机/); assert.match(r.msg, /再跟读/);
+      assert.doesNotMatch(r.msg, /声调|发音.*通过|说对|音节.*对/); assert.equal(r.seal, undefined);
+      return { text, r };
+    }
+    const text = cfg.answer || cfg.options[0], r = cfg.check(text, false);
+    assert.equal(r.ok, true, cfg.step); return { text, r };
+  } }, { plugged:true, startStation:'a' });
+  assert.equal(checked, true);
+  // Server coaching inspection does not trust a client-supplied ASR flag or verdict.
+  assert.equal(R.inspectPrompt(l4, { station:'a', step:'choose-motor', input:'去动电机', inputMode:'cloud-asr' }).correct, false);
+});
+
+test('ASR repair reads the active lesson dictionary; course-only terms and typed pinyin still work', async () => {
+  const lesson = copy(l5); lesson.dict['治冻'] = ['zhì dòng', 'ASR transcript'];
+  let checked = false;
+  await R.run(lesson, { station(){}, say(){}, action(){}, finish(){}, async ask(cfg) {
+    if (!checked && cfg.answer === '制动') {
+      checked = true;
+      assert.equal(cfg.check('治冻', false).ok, false);
+      assert.equal(cfg.check('zhidong', false).ok, true);
+      const text = '那个是治冻', r = cfg.check(text, false, { inputMode:'cloud-asr' });
+      assert.equal(r.ok, true); assert.equal(r.via, 'sound'); assert.equal(r.input, '制动');
+      return { text, r };
+    }
+    const text = cfg.answer || cfg.options[0], r = cfg.check(text, false);
+    assert.equal(r.ok, true, cfg.step); return { text, r };
+  } }, { plugged:true, startStation:'a' });
+  assert.equal(checked, true);
+});
 async function play(lesson, opts = {}) {
   let plugged = !!opts.initialPlugged;
   const events = [], results = [], asks = [], failures = [];

@@ -1,0 +1,22 @@
+{
+  "provider": "Tripo domestic v3",
+  "taskId": "c3f58877-f573-49d1-8a68-fd7bb4c1b229",
+  "status": "success",
+  "review": "accepted-for-classroom",
+  "inputSha256": "d9b7552057a9b90448653a57cf3482edc0f2a50e9f42eefc3f0170e6ee8ae12c",
+  "options": {
+    "model": "v3.1-20260211",
+    "texture": true,
+    "pbr": true,
+    "texture_quality": "detailed",
+    "geometry_quality": "detailed",
+    "face_limit": 40000,
+    "texture_alignment": "original_image",
+    "enable_image_autofix": true
+  },
+  "creditsConsumed": 60,
+  "sourceSha256": "7909e1489a96b30263b6d6bddf4f89a5c90d14607797ec51649b1668b203b83b",
+  "sourceFile": "model_url.glb",
+  "previewFile": "rendered_image_url.png",
+  "skeletalAnimation": false
+}
