@@ -162,3 +162,91 @@ node --test test/splat-lod.test.js test/splat-downsample.test.mjs
 - 按网络下载多份独立分辨率文件的流式加载尚未实现；当前 LOD 在同一份已解码点云中切换子集。
 
 SPZ v2/v3 的核心属性解析与原高斯着色路径保持不变。工具的 PLY 读取额外正确处理 CRLF、ASCII 与整数属性；浏览器 PLY 读取器未在本任务中改动。因此遇到这种 PLY 可先用本工具转换成 `.splat` 再载入。
+
+## C02：200 万点合成压力实跑
+
+`scripts/splat-stress.mjs` 实际运行现有 `scripts/splat-downsample.mjs` CLI，将 **2,000,000 点降为 100,000 点**。本节数据全部是可复现的 **synthetic** 点云，不是 Marble 真实导出，也不包含新能源汽车车间语义。测试没有联网或付费调用。
+
+本次覆盖两个输入路径：
+
+- binary little-endian PLY：每点 44 字节，包括 XYZ、三轴对数尺度、wxyz 四元数和 uchar RGBA；有明确 synthetic header comment。
+- SPZ v3：同一个解析公式生成的点族，由已在本机的官方 Niantic WASM 编码器生成，SH degree 0、fractionalBits 12；编码器 SHA-256 必须匹配前述固定值才执行。
+
+输入由 150 万个密集区域点和 50 万个分离的稀疏区域点构成，位置使用可被 SPZ 精确表示的二进制分数；尺度、四元数、颜色和 alpha 随索引变化。它适合核对数量与属性，没有模拟扫描噪声、复杂高阶 SH 或真实房间的视觉分布。
+
+### 复现命令
+
+```powershell
+node scripts/splat-stress.mjs --out artifacts/splat-stress/NEW-RUN-DIRECTORY
+```
+
+默认 `--points 2000000 --target 100000`，官方模块默认读取 `.local/spz-official/spz.mjs`。脚本不下载模块；缺少或哈希不一致会报告失败。输出目录必须位于 `artifacts/splat-stress/` 内且尚不存在，防止覆盖已有测量。可用 `--points 2000 --target 100` 先运行小规模预检；这不算 200 万点验收。
+
+每个生成、CLI、复跑和验证阶段均使用**独立且串行的 Node 子进程**。CLI 没有被改写；测量脚本用 `--import` 安装退出时的 `process.resourceUsage()` 采集器。报告同时记录：父进程测得的 wall time（含启动）、子进程采集器到退出的 elapsed、CPU time，以及进程生命周期中的 RSS 峰值。`maxRSS` 单位为 **KiB（1024 字节）**，表中除以 1024 换为 MiB，不是 JavaScript 堆大小或相对基线增量。[Node 官方说明](https://nodejs.org/api/process.html#processresourceusage)
+
+每个子进程设置 768 MiB 的 V8 堆上限，默认启动前检查至少 2048 MiB 可用内存，并有 300 秒超时。**V8 堆上限不限制 typed array/WASM 或整个进程 RSS**；脚本没有声称配置了操作系统硬 RSS 限额。隔离、串行、限定输入和内存预检降低主进程风险，但不能保证任意低内存机器都能运行。异常退出、超时、测不到 RSS 等情况写入报告，不补造数值。
+
+### 本次结果
+
+环境：Windows x64，Node v22.13.0，Intel Core i7-13650HX。运行时主线两个测试浏览器已经结束。报告位置为 `artifacts/splat-stress/run-2m-20261108/report.json`，含完整参数、代码哈希、阶段日志、输入输出哈希和错误边界结果。
+
+| 实际 CLI 路径 | 首次 wall time | 复跑 wall time | 首次峰值 RSS | 复跑峰值 RSS |
+|---|---:|---:|---:|---:|
+| PLY 2m → 100k | 2957.4 ms | 2940.8 ms | 275416 KiB / 268.96 MiB | 280120 KiB / 273.55 MiB |
+| SPZ v3 2m → 100k | 5631.8 ms | 5554.3 ms | 272944 KiB / 266.55 MiB | 273244 KiB / 266.84 MiB |
+
+子进程采集器的 elapsed 分别为 PLY 2856.1/2829.9 ms、SPZ 5526.3/5449.8 ms，和 wall time 区分保存。**生成阶段不计入 CLI 时间**：PLY 生成约 489 ms、峰值 84.2 MiB；官方编码 synthetic SPZ v3 约 1886 ms、峰值 493.5 MiB。调度父进程峰值为 52940 KiB（约 51.7 MiB），没有在主进程中持有 200 万点属性数组。
+
+| 项目 | PLY 路径 | SPZ v3 路径 |
+|---|---:|---:|
+| 输入字节数 | 88,000,409 | 4,763,876（解压后 40,000,016） |
+| 输出点数 / 字节数 | 100,000 / 3,200,000 | 100,000 / 3,200,000 |
+| 唯一源点数 | 100,000 | 100,000 |
+| 密集 / 稀疏区域点数 | 75,000 / 25,000 | 75,000 / 25,000 |
+| 位置最大误差 | 0 | 0 |
+| 尺度最大相对误差 | 0 | 0 |
+| RGB 最大字节差 | 0 | 1 |
+| alpha 最大字节差 | 0 | 0 |
+| 旋转最大夹角误差 | 0.700921° | 0.719940° |
+| 两次输出哈希一致 | 是 | 是 |
+
+验证器独立读取 `.splat` 二进制，不调用被测采样器或编码器来重新生成期望值。它从每个输出点的坐标反解原索引，核对不重复、范围合法、全部属性有限、尺度为正，并逐点对照解析公式；旋转按四元数正负等价计算夹角。预设上限为位置误差 0、尺度相对误差 1e-6、PLY RGB/alpha 完全相同、SPZ RGB≤2 字节/alpha≤1 字节、旋转≤3°。SPZ 颜色量化与 `.splat` 的 8 位旋转量化不被描述为无损。
+
+输入 SHA-256：
+
+```text
+PLY:    6d2f5b15fd449d98866c915a100fe5bab8e3d43143b90c4c06f90f5618c26ae4
+SPZ v3: 3d09800bff8f19db4d5fc7c78fa2f0aafa6ac626f0f988dfe89379262a9847d1
+```
+
+输出 SHA-256（复跑相同）：
+
+```text
+synthetic-ply-100000.splat:
+e2a6002b4824c23a61c26eb7e5b76ad1bba24daa06038e90e009b11c54d904cf
+synthetic-spz-v3-100000.splat:
+d1efb5bdc28ca22799b61b10cbd2623b55ba013402e8ea257cb4db5596072240
+```
+
+实际 CLI 另外验证五个失败边界：请求 0 点、请求超过 1000 万点、200 万点声明但只有一行数据的 PLY、200 万点声明但只有文件头的 SPZ、超过 512 MiB 的输入文件。均以退出码 1 拒绝且没有产生输出；失败阶段 RSS 也保存在报告中。512 MiB+1 的临时占位文件在检查后精确删除，其余输入/输出/报告留在忽略目录。
+
+最初的小规模预检还捕获了 Windows `--import` 不接受裸 `C:` 路径的测量器问题，已改用 `file:` URL；该次失败日志保留在 `artifacts/splat-stress/smoke-20261108/`。它不是 PLY/SPZ 解析错误，200 万点实跑使用的是已修正版本。本次没有发现需要修改降采样器的解析或内存故障。
+
+所有压力数据与官方模块均位于 Git 忽略路径，已用 `git check-ignore` 核对。可再内嵌的实际产物为 `artifacts/splat-stress/run-2m-20261108/synthetic-spz-v3-100000.splat` 或同目录 PLY 路径的输出；应放进独立测试 HTML，并继续标明 synthetic，不能替换产品车间素材。
+
+### 实际再内嵌验证
+
+主代理已经分别用上述SPZ/PLY路径的100k输出生成独立测试HTML，再复制到只有该HTML的系统临时目录，在Edge浏览器断网模式打开。两者均读到100k源点，2.5万→10万细节切换通过、WebGL错误0、车的52个子网格保留，课堂问答仍正确且无语料印章；HTTP和其他本地资源请求均0。点云与网格同屏截图已复核，图中的彩色点族明确是合成压力数据，不能拿它呈现为车间成品。
+
+复现其中SPZ路径（已有上述压力输出后）：
+
+```powershell
+$env:MARBLE=(Resolve-Path 'artifacts/splat-stress/run-2m-20261108/synthetic-spz-v3-100000.splat').Path
+node build.js .local/splat-embedded/spz/embedded-synthetic-spz.html
+Remove-Item Env:MARBLE
+node scripts/browser-embedded-check.cjs .local/splat-embedded/spz/embedded-synthetic-spz.html 100000 artifacts/splat-embedded-spz
+```
+
+PLY路径同样以 `synthetic-ply-100000.splat` 生成；报告在 `artifacts/splat-embedded-spz/report.json`、`artifacts/splat-embedded-ply/report.json`，记录各自独立HTML哈希、设备与断网状态。本轮未覆盖产品构建，也没有把测试素材纳入Git。
+
+本结果没有覆盖 200 万点 ASCII PLY、SPZ v2、高阶 SH、所有 PLY 属性组合或 1000 万点满载；不推断这些范围均已验收。CLI 吞吐、RSS 和 synthetic 再内嵌验证均**不能证明中端核显达到 30 fps、真实车间构图合格或用户车间首屏不超过 5 秒**。

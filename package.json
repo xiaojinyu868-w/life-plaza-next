@@ -15,6 +15,7 @@
     "test:lexicon": "node --test test/lexicon.test.js test/hsk-vocabulary.test.mjs",
     "test:services": "node --test test/net.test.js test/server.test.mjs test/runtime-policy.test.mjs test/event-store.test.mjs test/tencent-soe.test.mjs test/pronunciation.test.js test/npc-voice.test.js test/voice-output.test.js test/npc-timing.test.js test/npc-evaluation.test.mjs test/splat-downsample.test.mjs test/splat-lod.test.js test/lesson.test.js",
     "test:browser": "node scripts/browser-smoke.cjs",
+    "test:portable": "node scripts/browser-smoke.cjs --portable-offline",
     "test:speech-ui": "node scripts/browser-speech-check.cjs",
     "test:npc-ui": "node scripts/browser-npc-check.cjs",
     "test:response-ui": "node scripts/browser-response-check.cjs",

@@ -4,22 +4,51 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const { createHash } = require('node:crypto');
 const { pathToFileURL } = require('node:url');
 const base = process.env.WORKSHOP_TEST_URL || 'http://127.0.0.1:5198';
 const browserChannel = process.env.PLAYWRIGHT_CHANNEL || 'msedge';
 const output = path.resolve(process.env.WORKSHOP_BROWSER_ARTIFACT_DIR || 'artifacts/browser');
+const portableOffline = process.argv.includes('--portable-offline');
+const sourceFile = path.resolve('dist/插电工坊.html');
+const hashFile = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const sourceSha256 = hashFile(sourceFile);
+let classroomFile = sourceFile, portableCopy = null;
+if (portableOffline) {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'workshop-portable-'));
+  classroomFile = path.join(directory, '课堂 离线.html');
+  fs.copyFileSync(sourceFile, classroomFile);
+  assert.equal(hashFile(classroomFile), sourceSha256);
+  assert.deepEqual(fs.readdirSync(directory), [path.basename(classroomFile)]);
+  portableCopy = { directory, filename: path.basename(classroomFile), sha256: sourceSha256, siblingFiles: fs.readdirSync(directory) };
+}
 fs.mkdirSync(output, { recursive: true });
 
 async function completeLesson(browser, lesson, plugged) {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-  const errors = [], requests = [], steps = new Set(), stations = new Set();
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, offline: portableOffline });
+  const page = await context.newPage();
+  let offlineProbe = null;
+  if (portableOffline) {
+    // Reserved .invalid destination; offline emulation must reject before any DNS/HTTP.
+    const probe = await context.newPage();
+    probe.once('requestfailed', request => { offlineProbe = request.failure()?.errorText; });
+    await assert.rejects(probe.goto('https://workshop-portable.invalid/offline-probe', { timeout: 5000 }), /ERR_INTERNET_DISCONNECTED/);
+    assert.equal(offlineProbe, 'net::ERR_INTERNET_DISCONNECTED');
+    await probe.close();
+  }
+  const errors = [], requests = [], otherLocalResources = [], steps = new Set(), stations = new Set();
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  page.on('request', r => { if (/^https?:/.test(r.url())) requests.push(r.url()); });
+  page.on('request', r => {
+    if (/^https?:/.test(r.url())) requests.push(r.url());
+    if (r.url().startsWith('file:') && new URL(r.url()).pathname !== pathToFileURL(classroomFile).pathname) otherLocalResources.push(r.url());
+  });
   await page.addInitScript(() => { window.CDG_AUTOSTATE = { level: 2, fast: true }; });
-  const url = pathToFileURL(path.resolve('dist/插电工坊.html'));
+  const url = pathToFileURL(classroomFile);
   url.searchParams.set('lesson', lesson); url.searchParams.set('debug', '1');
   await page.goto(url.href);
+  if (portableOffline) assert.equal(await page.evaluate(() => navigator.onLine), false);
   await page.waitForFunction(() => window.__cdg?.currentPrompt !== undefined);
   await page.evaluate(() => { window.__cdg.ST.sound = false; window.speechSynthesis?.cancel(); });
   const start = Date.now(); let wrongTested = false, lastStep = null;
@@ -62,9 +91,10 @@ async function completeLesson(browser, lesson, plugged) {
   if (lesson === 'nev-l5') assert.equal(stats.evidence, 0, 'authored lesson must not acquire corpus evidence');
   assert.deepEqual([...stations], ['intro', 'a', 'b', 'd', 'c', 'end']);
   assert.equal(requests.length, 0, 'file classroom must not send HTTP requests');
+  assert.equal(otherLocalResources.length, 0, 'single HTML must not depend on sibling source files or assets');
   await page.screenshot({ path: path.join(output, `${lesson}-${plugged ? 'plugged' : 'unplugged'}-complete.png`) });
-  const result = { lesson, plugged, stations: [...stations], checkedPrompts: steps.size, wrongAnswerRecovery: wrongTested, offlineHttpRequests: requests.length, errors, ...stats };
-  await page.close(); return result;
+  const result = { lesson, plugged, stations: [...stations], checkedPrompts: steps.size, wrongAnswerRecovery: wrongTested, offlineHttpRequests: requests.length, otherLocalResources: otherLocalResources.length, ...(portableOffline ? { navigatorOnline: await page.evaluate(() => navigator.onLine), offlineProbe } : {}), errors, ...stats };
+  await context.close(); return result;
 }
 
 async function checkOnlineAndMobile(browser) {
@@ -143,9 +173,11 @@ async function checkOnlineAndMobile(browser) {
     const selectedCases = selected ? cases.filter(([lesson, plugged]) => `${lesson}-${plugged ? 'plugged' : 'unplugged'}` === selected) : cases;
     assert.ok(selectedCases.length || selected === 'integration', 'Unknown WORKSHOP_TEST_CASE');
     for (const [lesson, plugged] of selectedCases) courses.push(await completeLesson(browser, lesson, plugged));
-    const integration = !selected || selected === 'integration' ? await checkOnlineAndMobile(browser) : null;
-    const result = { testedAt: new Date().toISOString(), browser: { channel: browserChannel, version: browser.version() }, mode: 'real-browser-with-scripted-inputs', realVoiceTested: false, realModelTested: false, courses, integration };
-    fs.writeFileSync(path.join(output, selected ? `report-${selected}.json` : 'report.json'), JSON.stringify(result, null, 2));
+    assert.ok(!(portableOffline && selected === 'integration'), 'Portable offline mode only checks the copied file');
+    const integration = !portableOffline && (!selected || selected === 'integration') ? await checkOnlineAndMobile(browser) : null;
+    if (portableCopy) assert.deepEqual(fs.readdirSync(portableCopy.directory), [portableCopy.filename]);
+    const result = { testedAt: new Date().toISOString(), browser: { channel: browserChannel, version: browser.version() }, mode: portableOffline ? 'portable-offline-browser-with-scripted-inputs' : 'real-browser-with-scripted-inputs', buildSha256: sourceSha256, portableCopy, realVoiceTested: false, realModelTested: false, courses, integration };
+    fs.writeFileSync(path.join(output, portableOffline ? 'report-portable-offline.json' : selected ? `report-${selected}.json` : 'report.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

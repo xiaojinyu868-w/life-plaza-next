@@ -68,6 +68,8 @@ npm run test:lexicon
 
 可选浏览器检查：先 `npm ci` 安装开发依赖，在另一个终端保持本机服务运行，再执行 `npm run test:browser`。默认使用已安装的 Edge；可设 `PLAYWRIGHT_CHANNEL=chrome`，并用 `WORKSHOP_BROWSER_ARTIFACT_DIR` 指定独立输出目录。默认报告和截图在 `artifacts/browser/`。脚本使用自动输入，不能替代真人语音与教学审阅。测试服务建议用独立的 `WORKSHOP_DATA_DIR`，以免把测试会话混入正式课堂。
 
+`npm run test:portable` 不需要后端：把生成的HTML复制到系统临时目录，确认目录内只有该文件，在浏览器断网模式下跑两课的三条路径。脚本先以独立页面验证网络请求确实被断网拦截，再检查课堂没有HTTP或其他本地资源依赖。报告 `report-portable-offline.json` 包含构建/副本哈希与位置，副本留在临时目录方便复查。这验证同机跨目录和浏览器断网，不代表所有电脑、核显或真实语音都已通过。
+
 `npm run test:speech-ui` 自行启动隔离测试服务，检查桌面和手机的跟读、失败、关闭、切题与断网流程；使用合成麦克风和假供应商回复，不上传真人录音。可选 `node scripts/browser-splat-check.cjs <本地500k官方v3样本路径>` 需要提前取得验证样本，不会下载或内嵌素材；报告在 `artifacts/splat-browser/`。
 
 `npm run test:npc-ui` 检查自由语音问答、两次错答反馈、车型指代与对话关闭；同样只用模拟供应商。`npm run eval:npc:plan` 生成50轮清单和待审模板，实际执行轮数为0；显式真实调用及审核方法见 NPC 验收工具文档。
