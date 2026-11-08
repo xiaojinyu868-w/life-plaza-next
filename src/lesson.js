@@ -193,7 +193,7 @@
     const state = { plugged: !!options.plugged, level, focus: 'phev' };
     let ctx = { state, result: {}, input: '', normalized: '', chip: false, answer: '' }, finished = false, budget = 20000;
     const refresh = () => { if (pluggedGetter) state.plugged = !!options.plugged; };
-    async function action(c, context) { const args = resolve(c.args, context); await adapter.action(c.name, args); if (c.name === 'plug') { state.plugged = !!args.value; refresh(); } }
+    async function action(c, context) { const args = resolve(c.args, context); await adapter.action(c.name, args); if (c.name === 'plug') { state.plugged = !!args.value; refresh(); } if (c.name === 'focus') state.focus = ['phev','bev','ice'].includes(args.car) ? args.car : 'phev'; }
     async function execute(xs, context = ctx) {
       for (const c of xs) {
         if (--budget < 0) fail('runtime', 'command budget exceeded'); if (finished) fail('runtime', 'command after finish'); refresh();
@@ -239,6 +239,27 @@
     for (const station of lesson.stations.slice(start)) { await adapter.station(station.id, station.name); await execute(station.commands, ctx); }
     return { lesson: lesson.id, finished, plugged: state.plugged, level };
   }
-  G.CDG_LESSON = { validate, run, ACTIONS, CHECKS };
+  // Read-only inspection for server coaching. Never execute lesson actions or accept a client verdict.
+  function inspectPrompt(lesson, { station, step, input, focus = 'phev', plugged = false, level = 2 } = {}) {
+    const root = lesson.stations.find(s => s.id === station); if (!root) return null;
+    let found = null, budget = 2000;
+    function visit(commands) {
+      for (const c of commands || []) {
+        if (--budget < 0) fail('inspection', 'command budget exceeded');
+        if (c.op === 'ask' && c.id === step) { found = c; return; }
+        if (c.op === 'pool') for (const item of lesson.pools[c.id] || []) visit(item.commands);
+        for (const key of ['then', 'else', 'after', 'attempt']) if (c[key]) visit(c[key]);
+        if (found) return;
+      }
+    }
+    visit(root.commands); if (!found) return null;
+    const text = String(input || '').trim(), ctx = { state: { focus, plugged, level }, input: text, normalized: L.norm(text), chip: false, answer: '', result: {} };
+    const cfg = resolve(found.cfg, ctx); ctx.answer = cfg.answer || '';
+    const result = diagnose(found.check, text, false, ctx, lesson); ctx.result = result;
+    const feedback = found.feedback.find(f => !f.when || condition(f.when, ctx));
+    return { step, task: cfg.task, answer: cfg.answer || '', checkType: found.check.type, target: found.check.target || cfg.answer || '',
+      correct: result.ok === true, errorKind: result.kind || result.err || result.why || '', feedback: feedback ? resolve(feedback.msg, ctx) : '', result };
+  }
+  G.CDG_LESSON = { validate, run, inspectPrompt, ACTIONS, CHECKS };
   if (typeof module !== 'undefined') module.exports = G.CDG_LESSON;
 })(typeof window !== 'undefined' ? window : globalThis);

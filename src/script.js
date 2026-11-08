@@ -78,6 +78,8 @@
     cAskMore: L('很好！再问一个。', 'Good! Ask one more.', ''),
     cDone: L('很好！这辆车可以走了。', 'Very good! This car can go now.', '出厂：车开出车间。'),
   };
+  // Authored explanation for the apprentice's question particle, not an HSK grade.
+  S.dialogueGloss = { '呀': 'sentence-final particle: a curious tone' };
   G.CDG_SCRIPT = S;
   if (typeof module !== 'undefined') module.exports = S;
 })(typeof window !== 'undefined' ? window : globalThis);

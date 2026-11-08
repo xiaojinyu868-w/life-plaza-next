@@ -253,6 +253,16 @@ body.plugged .lbl.plaque .seal { box-shadow: 0 0 18px 6px rgba(255,170,120,.7), 
 .npc-answer { min-height:90px; font:18px/1.8 var(--ll-font); }
 .npc-answer small { color:var(--ll-soft); font:12px var(--ll-sans); }
 .npc-line ruby rt { font:11px var(--ll-sans); }
+.npc-role { display:flex; align-items:center; gap:12px; font-size:13px; color:var(--ll-soft); }
+.npc-role select { min-height:44px; border:1px solid #cfcbc2; border-radius:8px; padding:8px; font:14px var(--ll-sans); background:#fffdf7; color:var(--ll-ink); }
+.npc-voice-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.npc-voice-controls span { font:12px/1.6 var(--ll-sans); color:var(--ll-soft); }
+.npc-voice-controls button,.npc-consent button { min-height:44px; border:1px solid var(--ll-teal); color:var(--ll-teal); background:#fffdf7; border-radius:9px; padding:10px 14px; cursor:pointer; font:600 14px var(--ll-sans); }
+.npc-voice-controls button:disabled { opacity:.5; cursor:wait; }
+.npc-consent { margin:10px 0; padding:12px; border-left:3px solid var(--ll-teal); background:#e4efea; font-size:13px; }
+.npc-coaching { color:var(--ll-ink); font:15px/1.8 var(--ll-font); }
+.npc-coaching b { color:var(--ll-teal); font:600 12px var(--ll-sans); margin-right:6px; }
+.npc-coaching ruby rt { font:10px var(--ll-sans); }.npc-coaching small { display:block; font:12px/1.5 var(--ll-sans); color:var(--ll-soft); }
 .pronunciation .box { width:min(520px,calc(100vw - 24px)); padding:28px; max-height:calc(100dvh - 32px); overflow-y:auto; }
 .practice-eyebrow { color:var(--ll-teal); font:600 12px var(--ll-sans); letter-spacing:.08em; margin-bottom:8px; }
 .practice-reference { font:26px/2.1 var(--ll-font); overflow-wrap:anywhere; margin:10px 0; }

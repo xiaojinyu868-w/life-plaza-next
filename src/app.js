@@ -14,19 +14,19 @@
   const LESSON = window.CDG_CURRENT_LESSON;
   const NET = window.CDG_NET ? window.CDG_NET.createClient() : null;
   let capabilities = {}, conversationOpen = false, currentStep = '', cloudRecording = null, micBusy = false, micConsent = false;
-  let speechDialog = null, micEpoch = 0;
+  let speechDialog = null, npcDialog = null, micEpoch = 0;
   let attemptSource = 'text', speechResult = null, promptSerial = 0;
   const chatHistory = [];
   const lessonId = () => LESSON?.id || 'nev-l4';
   const track = (type, payload = {}) => { if (NET) void NET.event(lessonId(), type, { station: ST.station, step: currentStep, ...payload }); };
   const turnContext = (userText, role = 'wang') => ({ lesson: lessonId(), station: ST.station || 'intro', step: currentStep || 'free-question', role,
-    level: ST.teacher ? 0 : ST.level, plugged: ST.plugged, userText, history: chatHistory.slice(-6),
+    level: ST.teacher ? 0 : ST.level, plugged: ST.plugged, focus: ST.focus, userText, history: chatHistory.slice(-6),
     allowedWords: LESSON?.vocabulary || ['发动机', '驱动电机', '动力电池', '也', '对吗'], allowedErrors: [], facts: L.FACT, budget: { timeoutMs: 2500 } });
 
   async function toggleOnline() {
     if (!NET) return;
     const b = $('tools').querySelector('[data-t="online"]');
-    if (NET.enabled) { NET.setEnabled(false); if (speechDialog) closeModal(); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
+    if (NET.enabled) { NET.setEnabled(false); if (speechDialog || npcDialog) closeModal(); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
     if (!/^https?:$/.test(location.protocol)) { toast('这是离线文件。需要联机时，请从本机服务地址打开；当前仍可完整上课。'); return; }
     NET.setEnabled(true); b.textContent = '连接中…';
     try {
@@ -38,21 +38,42 @@
   }
   function askMaster() {
     if (conversationOpen) return;
-    conversationOpen = true;
-    const m = modal(`<button class="close" data-x="1">×</button><h2>问师傅</h2><p class="sub">先问清楚，再回到刚才那一步。可用中文或拼音。</p><form class="npc-form"><input aria-label="想问师傅的问题" maxlength="300" placeholder="例如：纯电动汽车有发动机吗？"><button type="submit">问一问</button></form><div class="npc-answer" aria-live="polite"></div><p class="pending">${NET?.enabled ? '联机回答经过校验；服务失败时使用本地回答。' : '当前离线：可以查询三种车的基本属性。'}</p>`);
+    cancelCloudRecording(); if (rec) { const old = rec; rec = null; try { old.abort(); } catch (_) {} }
+    const m = modal(`<button class="close" data-x="1" aria-label="返回课堂">×</button><h2>问师傅</h2><p class="sub">先问清楚，再回到刚才那一步。可用中文或拼音。</p>
+      <label class="npc-role">和谁说 <select aria-label="对话伙伴"><option value="wang">王明师傅</option><option value="dragon">小龙学徒</option></select></label>
+      <form class="npc-form"><input aria-label="想问师傅的问题" maxlength="300" placeholder="例如：纯电动汽车有发动机吗？"><button type="submit">问一问</button></form>
+      <div class="npc-voice-controls"><button type="button" data-npc-mic>用语音说</button><span data-npc-voice-status role="status"></span></div>
+      <div class="npc-consent hidden"><p>录音会发送至部署方配置的语音服务；浏览器识别可能使用浏览器厂商的网络服务。本课件不保存录音。也可以继续打字。</p><button type="button" data-npc-consent>同意本次语音练习</button></div>
+      <div class="npc-answer" aria-live="polite"></div><p class="pending">${NET?.enabled ? '联机回答经过校验；服务失败时使用本地回答。' : '当前离线：可以查询三种车的基本属性。'}</p>`);
     conversationOpen = true;
     const form = m.querySelector('form'), inp = form.querySelector('input'), out = m.querySelector('.npc-answer');
-    let seq = 0;
+    const dialog = npcDialog = { m, flow: FLOW, voice: null };
+    let seq = 0, role = 'wang', voiceInput = null;
+    const mic = m.querySelector('[data-npc-mic]'), voiceStatus = m.querySelector('[data-npc-voice-status]');
+    const live = () => npcDialog === dialog && dialog.flow === FLOW && m.isConnected;
+    dialog.voice = window.CDG_NPC_VOICE.create({ client: NET, capabilities: () => capabilities, current: live,
+      context: () => ({ lesson: lessonId(), station: ST.station || 'intro', step: currentStep || 'free-question' }),
+      onState(phase) { mic.disabled = ['permission','sending'].includes(phase); mic.textContent = ['recording','browser'].includes(phase) ? '停止录音' : '用语音说'; voiceStatus.textContent = ({ permission:'正在打开麦克风…', recording:'正在录音…', browser:'浏览器正在识别…', sending:'正在识别…' })[phase] || ''; },
+      onTranscript(text, source) { inp.value = text; voiceInput = { text, source }; voiceStatus.textContent = '请看一下识别文字，再点“问一问”。'; inp.focus(); },
+      onError(code) { voiceStatus.textContent = ({ offline:'先开启“联机”，或继续打字。', cloud_failed:'云端识别未成功，尝试浏览器识别。', browser_unavailable:'浏览器不支持识别，可以打字或输入拼音。', browser_failed:'没有识别成功，可以再试或打字。', microphone_denied:'麦克风未打开，可以继续打字。', empty_audio:'没有录到声音，请再试一次。' })[code] || '语音暂不可用，可以继续打字。'; },
+    });
+    const startVoice = () => { if (window.speechSynthesis) speechSynthesis.cancel(); void dialog.voice.toggle(); };
+    mic.onclick = () => { if (!NET?.enabled) { voiceStatus.textContent = '先开启“联机”，或继续打字。'; return; } if (!micConsent) { m.querySelector('.npc-consent').classList.remove('hidden'); return; } startVoice(); };
+    m.querySelector('[data-npc-consent]').onclick = () => { micConsent = true; m.querySelector('.npc-consent').classList.add('hidden'); startVoice(); };
+    inp.addEventListener('input', () => { voiceInput = null; });
+    m.querySelector('select').onchange = e => { role = e.target.value; seq++; dialog.voice.cancel(); voiceInput = null; chatHistory.splice(0); out.textContent = ''; form.querySelector('button').disabled = false; m.querySelector('h2').textContent = role === 'dragon' ? '和小龙说' : '问师傅'; };
     form.addEventListener('submit', async e => {
       e.preventDefault(); const text = inp.value.trim(); if (!text) return; const n = ++seq, flow = FLOW;
-      out.textContent = '师傅在听…'; form.querySelector('button').disabled = true;
+      dialog.voice.cancel();
+      if (voiceInput?.text === text) { ST.spoken++; gauges(); track('speak_attempt', { asrOk: true, inputMode: voiceInput.source }); } voiceInput = null;
+      out.textContent = role === 'dragon' ? '小龙在想…' : '师傅在听…'; form.querySelector('button').disabled = true;
       let fallback = { zh: '我们先看看这辆车。', en: 'Let’s look at this car first.' };
       try { const q = L.parseQuestion(text, ST.focus); if (q.ok) { const a = L.answerQuestion(q); fallback = { zh: typeof a === 'string' ? a : fallback.zh, en: '' }; } } catch (_) {}
-      const r = NET ? await NET.turn(turnContext(text), fallback) : fallback;
+      const r = NET ? await NET.turn(turnContext(text, role), fallback) : fallback;
       if (n !== seq || flow !== FLOW || !conversationOpen || !m.isConnected) return;
-      out.innerHTML = `<div class="npc-line">${ruby(r.zh)}</div><div class="cap-gloss">${gloss(r.zh)}</div><p>${esc(r.en || '')}</p><small>${r.source === 'llm' ? '师傅的回答 · AI 生成，不计入语料证据' : '课堂参考回答'}</small>`;
-      form.querySelector('button').disabled = false; speak(r.zh, 'wang');
-      chatHistory.push({ who: 'you', zh: text }, { who: 'wang', zh: r.zh }); if (chatHistory.length > 6) chatHistory.splice(0, chatHistory.length - 6);
+      out.innerHTML = `<div class="npc-line">${ruby(r.zh)}</div><div class="cap-gloss">${gloss(r.zh)}</div><p>${esc(r.en || '')}</p><small>${r.source === 'llm' ? 'AI 辅助回答，不计入语料证据' : '课堂参考回答'}</small>`;
+      form.querySelector('button').disabled = false; speak(r.zh, role);
+      chatHistory.push({ who: 'you', zh: text }, { who: role, zh: r.zh }); if (chatHistory.length > 6) chatHistory.splice(0, chatHistory.length - 6);
     }); inp.focus();
   }
 
@@ -475,7 +496,7 @@
   }
   function gloss(zh) {
     const words = new Map();
-    for (const t of L.segment(zh)) if (t.zh && tokClass(t) === 'll-new') words.set(t.t, t.en || 'meaning not yet checked');
+    for (const t of L.segment(zh)) if (t.zh && tokClass(t) === 'll-new') words.set(t.t, t.en || S.dialogueGloss?.[t.t] || 'meaning not yet checked');
     return [...words].map(([w, en]) => `<span>${esc(w)} · ${esc(en)}</span>`).join('');
   }
   const WHO = { wang: '王明 · 师傅', dragon: '小龙 · 学徒', you: '你 · 马丁' };
@@ -522,7 +543,7 @@
     if (!cfg.speechTarget && cfg.stage === '认' && String(cfg.task).startsWith('跟读')) cfg.speechTarget = cfg.answer || '';
     currentStep = cfg.step || `${ST.station || 'intro'}-prompt-${++promptSerial}`;
     track('prompt_shown', { target: cfg.speechTarget || cfg.answer || '', task: cfg.task || '' });
-    return new Promise((resolve) => { askState = { id, cfg, resolve, tries: 0, hint: 0 }; showInbar(cfg); }).then((v) => { chk(id); return v; });
+    return new Promise((resolve) => { askState = { id, cfg, resolve, tries: 0, hint: 0, coachingHistory: [] }; showInbar(cfg); }).then((v) => { chk(id); return v; });
   }
   function showInbar(cfg) {
     $('inbar').classList.remove('hidden');
@@ -533,7 +554,7 @@
     $('inp').value = ''; $('msg').textContent = ''; $('msg').className = 'msg'; $('hintline').textContent = '';
     $('form').style.display = cfg.noInput ? 'none' : '';
     $('hint').style.display = cfg.answer ? '' : 'none';
-    if (!cfg.noInput && !('ontouchstart' in window)) setTimeout(() => $('inp').focus(), 60);
+    if (!cfg.noInput && !('ontouchstart' in window)) { const prompt = askState, flow = FLOW; setTimeout(() => { if (askState === prompt && FLOW === flow && !conversationOpen && !document.querySelector('.modal')) $('inp').focus(); }, 60); }
     if (AUTO && AUTO.answers && AUTO.answers.length) { const a = AUTO.answers.shift(); setTimeout(() => submit(a, /^(#|✓|🔌|先不插)/.test(a) || (cfg.options || []).includes(a)), AUTO.gap || 300); }
   }
   function hideInbar() { $('inbar').classList.add('hidden'); }
@@ -553,6 +574,7 @@
     if (A.hint >= steps.length && !$('chips').querySelector('.answer')) $('chips').insertAdjacentHTML('beforeend', `<button type="button" class="answer" data-chip="${esc(a)}">${esc(a)}<small>点这里也可以</small></button>`);
   };
   function submit(text, chip) {
+    if (conversationOpen) return;
     const A = askState; if (!A) return;
     const t = String(text || '').trim(); if (!t) return;
     if (cloudRecording || micBusy) cancelCloudRecording();
@@ -578,15 +600,31 @@
       if (r.fix && r.fix.sugs && r.fix.sugs.length) showFix(r.fix.was || t, r.fix.sugs);
       if (A.tries >= 2 && A.cfg.answer && !A.cfg.noAnswerChip && !$('chips').querySelector('.answer')) $('chips').insertAdjacentHTML('beforeend', `<button type="button" class="answer" data-chip="${esc(A.cfg.answer)}">${esc(A.cfg.answer)}<small>可以照着说 · say this</small></button>`);
       $('inp').value = '';
+      void coachAttempt(A, t, r);
       if (AUTO && AUTO.answers && AUTO.answers.length) { const a = AUTO.answers.shift(); setTimeout(() => submit(a, /^(#|✓|🔌|先不插)/.test(a) || (A.cfg.options || []).includes(a)), AUTO.gap || 300); }
     }
   }
+  async function coachAttempt(A, text, localResult) {
+    if (!NET?.enabled || !capabilities.npc || !A.cfg.step) return;
+    const flow = FLOW, tries = A.tries, role = ST.station === 'd' ? 'dragon' : 'wang';
+    const fallback = { zh: localResult.msg || '先看提示，再试一次。', en: '' };
+    const result = await NET.turn({ ...turnContext(text, role), purpose: 'feedback', focus: ST.focus, attempt: tries, history: A.coachingHistory.slice(-6) }, fallback);
+    if (flow !== FLOW || askState !== A || A.tries !== tries || !NET.enabled || conversationOpen) return;
+    // Coaching cannot resolve the prompt, alter the local verdict, or add an evidence seal.
+    const line = document.createElement('div'); line.className = 'npc-coaching';
+    line.innerHTML = `<b>${role === 'dragon' ? '小龙' : '王明'}</b> ${ruby(result.zh)}<div class="cap-gloss">${gloss(result.zh)}</div>${result.en ? `<small>${esc(result.en)}</small>` : ''}`;
+    $('hintline').replaceChildren(line);
+    A.coachingHistory.push({ who: 'you', zh: text }, { who: role, zh: result.zh });
+    if (A.coachingHistory.length > 6) A.coachingHistory.splice(0, A.coachingHistory.length - 6);
+    speak(result.zh, role);
+  }
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab' && speechDialog) {
-      const buttons = [...speechDialog.m.querySelectorAll('button:not(:disabled)')];
+    if (e.key === 'Tab' && (speechDialog || npcDialog)) {
+      const dialog = speechDialog || npcDialog;
+      const buttons = [...dialog.m.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled)')].filter(el => el.getClientRects().length);
       const first = buttons[0], last = buttons[buttons.length - 1];
-      if (e.shiftKey && (document.activeElement === first || !speechDialog.m.contains(document.activeElement))) { e.preventDefault(); last?.focus(); }
-      else if (!e.shiftKey && (document.activeElement === last || !speechDialog.m.contains(document.activeElement))) { e.preventDefault(); first?.focus(); }
+      if (e.shiftKey && (document.activeElement === first || !dialog.m.contains(document.activeElement))) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !dialog.m.contains(document.activeElement))) { e.preventDefault(); first?.focus(); }
     }
     if (e.key === 'Escape') { if (modal2El) { modal2El.remove(); modal2El = null; } else { closeCard(); closeModal(); } }
     if (e.code === 'Space' && document.activeElement !== $('inp') && sayResolve && !document.querySelector('.modal')) { e.preventDefault(); sayResolve(); }
@@ -675,7 +713,7 @@
   let modalEl = null, modal2El = null;
   function modal2(html) { if (modal2El) modal2El.remove(); modal2El = document.createElement('div'); modal2El.className = 'modal'; modal2El.style.zIndex = 86; modal2El.innerHTML = `<div class="box">${html}</div>`; modal2El.addEventListener('click', (e) => { if (e.target === modal2El || e.target.closest('[data-x]')) { modal2El.remove(); modal2El = null; } }); document.body.append(modal2El); return modal2El; }
   function modal(html) { closeModal(); modalEl = document.createElement('div'); modalEl.className = 'modal'; modalEl.innerHTML = `<div class="box">${html}</div>`; modalEl.addEventListener('click', (e) => { if (e.target === modalEl || e.target.closest('[data-x]')) closeModal(); }); document.body.append(modalEl); return modalEl; }
-  function closeModal() { if (speechDialog) { speechDialog = null; cancelCloudRecording(); if (window.speechSynthesis) speechSynthesis.cancel(); $('inp').focus(); } if (modalEl) modalEl.remove(); modalEl = null; conversationOpen = false; }
+  function closeModal() { if (npcDialog) { const old = npcDialog; npcDialog = null; old.voice?.cancel(); $('inp').focus(); } if (speechDialog) { speechDialog = null; cancelCloudRecording(); if (window.speechSynthesis) speechSynthesis.cancel(); $('inp').focus(); } if (modalEl) modalEl.remove(); modalEl = null; conversationOpen = false; }
 
   // 纠错卡（≤2 条建议，重写整句）
   let fixEl = null;
@@ -865,7 +903,7 @@
       const view = args.view === 'part' ? partView(args.part, car) : args.view === 'end' ? LAY.endCam[0] : VIEWS[args.view];
       if (!view) throw new Error('Unknown lesson camera');
       await camTo(view, args.seconds ?? 1);
-    } else if (name === 'focus') { focusPart(args.part || null, car); if (args.car && args.car !== 'main') ST.focus = args.car; }
+    } else if (name === 'focus') { focusPart(args.part || null, car); ST.focus = ['phev','bev','ice'].includes(args.car) ? args.car : 'phev'; }
     else if (name === 'compare') setCompare(args.word ? cmpWord(args.word) : args.value);
     else if (name === 'point') point(args.value);
     else if (name === 'pulse') { if (anim.pulse) setEmis(anim.pulse, null); anim.pulse = args.car ? W.show[args.car].root : null; ST.partLbl = null; }

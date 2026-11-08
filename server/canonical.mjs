@@ -23,6 +23,14 @@ export const ERROR_SAMPLES = ERROR_IDS.flatMap((id) => {
   return [{ id, zh: original, kind: 'original' }, ...clauses.map((zh) => ({ id, zh: zh + '。', kind: 'excerpt' }))];
 });
 const TEACHING_ANSWERS = new Set(['“也”放在动词前。', '先说主语，再说“也”。', '请用“对吗”来确认。', '“呢”是问另一个。', '先读这个词，再说一句话。', '请点这个词，看拼音。', '请先看零件，再说它的名字。']);
+// Intent labels are model claims too. An invented error cannot become safe by being
+// labelled praise/ask_back or by appending a question mark.
+const DIALOGUE = {
+  ask_back: new Set(['为什么呀？师傅。', '为什么呢？', '请师傅教我。', '你能再说一次吗？', '你可以举个例子吗？', '这个词怎么说？']),
+  praise: new Set(['谢谢师傅！', '谢谢你告诉我。', '我们慢慢来。', '你愿意试一试，很好。']),
+  redirect: new Set(['我们一起看。', '我们先看看这辆车。', '我们一起看这辆车。', '我们先看看这个词。', '这个问题，请问老师。']),
+  refuse: new Set(['这个问题，请问老师。', '我们先回到这一课。']),
+};
 
 export function validateLesson(lesson, expectedId) {
   if (!lesson || typeof lesson !== 'object' || lesson.id !== expectedId || !CONTENT_ID.test(lesson.id || '')) return false;
@@ -69,7 +77,7 @@ export function overLevel(text, level, content) {
     const entry = HSK.w[token.t];
     if (!entry || entry[0] > level) result.set(token.t, {
       w: token.t, hsk: entry?.[0] ?? null,
-      en: token.en || entry?.[2] || '', professional: !entry && ['n', 'r', 'x'].includes(token.tag),
+      en: token.en || entry?.[2] || SCRIPT.dialogueGloss?.[token.t] || '', professional: !entry && ['n', 'r', 'x'].includes(token.tag),
     });
   }
   return [...result.values()];
@@ -86,11 +94,17 @@ export function cleanTurn(body) {
   if (!userText || userText.length > 500) throw new Error('invalid_text');
   const step = String(body.step || 'free-question');
   if (!/^[a-zA-Z0-9_-]{1,80}$/.test(step)) throw new Error('invalid_step');
+  const purpose = body.purpose || 'question';
+  if (!['question', 'feedback'].includes(purpose)) throw new Error('invalid_purpose');
+  const focus = ['phev', 'bev', 'ice'].includes(body.focus) ? body.focus : 'phev';
+  const coaching = purpose === 'feedback' ? scope.CDG_LESSON.inspectPrompt(lesson, { station: body.station, step, input: userText, focus, plugged: body.plugged === true, level: body.level }) : null;
+  if (purpose === 'feedback' && !coaching) throw new Error('unknown_coaching_prompt');
   return {
     sessionId: body.sessionId, lesson: body.lesson || 'nev-l4', station: body.station || 'intro', step,
     role: body.role || 'wang', level: body.level, plugged: body.plugged === true, userText,
     history: Array.isArray(body.history) ? body.history.slice(-6).filter((x) => ['wang', 'dragon', 'you'].includes(x?.who) && typeof x.zh === 'string').map((x) => ({ who: x.who, zh: x.zh.slice(0, 160) })) : [],
     maxChars: [24, 10, 14, 18][body.level],
+    purpose, coaching, focus, attempt: Math.max(1, Math.min(20, Number.isInteger(body.attempt) ? body.attempt : 1)),
     timeoutMs: Math.min(2500, Math.max(100, Number(body.budget?.timeoutMs) || 2500)),
     // allowedWords, allowedErrors and facts supplied by a browser cannot authorize facts or evidence.
     allowedWords: Object.keys(lesson.dict), allowedErrors: body.plugged === true ? ERROR_IDS.filter((id) => lesson.evidence[id]) : [], facts: LOGIC.FACT,
@@ -103,10 +117,11 @@ export function factLine(subject, predicate) {
   if (!Object.hasOwn(LOGIC.FACT, subject) || !Object.hasOwn(predicates, predicate)) return null;
   return `它${predicates[predicate][Number(Boolean(LOGIC.FACT[subject][predicate]))]}。`;
 }
-export function questionFact(text) {
+export function questionFact(text, focus = 'phev') {
   const named = [/插电|插混|混合动力|混动车/, /纯电动|纯电车/, /燃油车/].filter((pattern) => pattern.test(text));
   if (named.length > 1) return null; // A singular “it” answer cannot safely resolve a multi-vehicle comparison.
-  const subject = /纯电动|纯电车/.test(text) ? 'bev' : /燃油车/.test(text) && !/插电|混合/.test(text) ? 'ice' : 'phev';
+  const subject = /纯电动|纯电车/.test(text) ? 'bev' : /燃油车/.test(text) && !/插电|混合/.test(text) ? 'ice' : /插电|插混|混合动力|混动车/.test(text) ? 'phev' : ['phev','bev','ice'].includes(focus) ? focus : null;
+  if (!subject) return null;
   for (const [pattern, predicate] of [[/发动机/, 'engine'], [/驱动电机|电机/, 'motor'], [/动力电池|电池/, 'battery'], [/燃油|汽油|用油|烧油/, 'fuel'], [/电能|用电|耗电/, 'elec'], [/新能源/, 'nev']]) {
     if (pattern.test(text) && /有没有|是否|是不是|有.*吗|没有.*吗|对吗|对吧|消耗.*吗|用.*吗|烧.*吗|是.*吗/.test(text)) return { subject, predicate };
   }
@@ -144,8 +159,34 @@ function reply(zh, en, grounding, evidence = []) {
 export function renderLookup(lookup, turn) {
   if (!lookup || typeof lookup !== 'object' || typeof lookup.kind !== 'string') return null;
   const question = normQuote(turn.userText);
+  if (lookup.kind === 'feedback') {
+    const c = turn.coaching;
+    if (turn.purpose !== 'feedback' || !c || !['hint', 'explain', 'encourage'].includes(lookup.style || 'hint')) return null;
+    let variants, en;
+    if (c.correct) { variants = turn.role === 'dragon' ? ['谢谢师傅！', '我来试一试。'] : ['这次说对了。', '我们接着说。']; en = 'That response matches this lesson task.'; }
+    else if (c.checkType === 'word') {
+      variants = [`先说“${c.target}”。`, `请再读“${c.target}”。`, `看这里：“${c.target}”。`];
+      en = `Try the lesson word: ${c.target}. ${turn.content.dict[c.target]?.[0] || ''} — ${turn.content.dict[c.target]?.[1] || ''}`;
+    } else if (c.checkType === 'yeItem' || ['A','B','yeA','yeEnd'].includes(c.errorKind)) {
+      variants = ['先说主语，再说“也”。', '“也”在动词前。', '找动词，再放“也”。']; en = 'Find the subject and verb. Put 也 after the subject and before the verb in this lesson pattern.';
+    } else if (c.checkType === 'confirm') {
+      variants = c.answer ? [c.answer, `请说“${c.answer.replace(/[。！]$/, '')}”。`, '再看一遍，再回答。'] : ['再看一遍，再回答。', '先想一想，再回答。'];
+      en = `Answer the confirmation question, rather than asking a new one. Lesson reference: ${c.answer || c.feedback}`;
+    } else if (c.checkType === 'question') {
+      variants = ['说完，再问“对吗”。', '先说一句话，再确认。', '请用“对吗”来问。']; en = 'State the idea, then use 对吗 to ask for confirmation. The local task still checks meaning and grammar.';
+    } else if (c.checkType === 'whyHybrid') {
+      variants = ['想一想：有哪些动力？', '看看这两个零件。', '先说“有”，再说“也有”。']; en = 'Explain the two power sources using the lesson pattern 有…也有….';
+    } else {
+      variants = ['先看提示，再说一次。', '我们一步一步说。', '先说你会的词。']; en = 'Use the task hint and try one small step. The local lesson decides whether the answer is correct.';
+    }
+    const prior = new Set(turn.history.filter(x => x.who !== 'you').map(x => x.zh));
+    const offset = ((turn.attempt || 1)-1 + ({ hint: 0, explain: 1, encourage: 2 }[lookup.style || 'hint'])) % variants.length;
+    const ordered = [...variants.slice(offset), ...variants.slice(0, offset)];
+    const zh = ordered.find(x => !prior.has(x) && fits(x, turn)) || ordered.find(x => fits(x, turn));
+    return zh ? reply(zh, en, { kind: 'coaching', sourceRef: `content/lessons/${turn.lesson}.json#${c.step}`, correct: c.correct, strategy: lookup.style || 'hint' }) : null;
+  }
   if (lookup.kind === 'fact') {
-    const expected = questionFact(question);
+    const expected = questionFact(question, turn.focus);
     if (!expected || expected.subject !== lookup.subject || expected.predicate !== lookup.predicate) return null;
     return reply(factLine(lookup.subject, lookup.predicate), 'According to the vehicle facts in this lesson.', { kind: 'fact', sourceRef: `FACT.${lookup.subject}.${lookup.predicate}` });
   }
@@ -217,7 +258,7 @@ export function renderLookup(lookup, turn) {
 /** Offline routing is explicit teaching support, not an assessment of a live model's quality. */
 export function inferLookup(turn) {
   const q = normQuote(turn.userText);
-  const fact = questionFact(q);
+  const fact = questionFact(q, turn.focus);
   if (fact) return { kind: 'fact', ...fact };
   if (/害怕|不敢|紧张|学不会|太难|说不好|说错|不好意思/.test(q)) return { kind: 'support', need: 'nervous' };
   if (/再说|慢一点|重说|重复|听不清/.test(q)) return { kind: 'support', need: 'repeat' };
@@ -254,12 +295,16 @@ const stepScripts = {
   'ask-more': 'cAskMore', 'open-question': 'cAsk', 'free-question': 'cAsk', 'feedback': 'bRead',
 };
 export function fallbackTurn(turn, reason = 'not_configured') {
+  if (turn.purpose === 'feedback') {
+    const feedback = renderLookup({ kind: 'feedback', style: 'hint' }, turn);
+    if (feedback) return { ok: true, source: 'script', ...feedback, overLevel: overLevel(feedback.zh, turn.level, turn.content), fallbackReason: reason };
+  }
   const lookup = inferLookup(turn);
   const grounded = lookup && renderLookup(lookup, turn);
   if (grounded && fits(grounded.zh, turn)) return { ok: true, source: 'script', ...grounded, overLevel: overLevel(grounded.zh, turn.level, turn.content), fallbackReason: reason };
   let line = SCRIPT[stepScripts[turn.step]];
   let intent = 'redirect';
-  const fact = questionFact(turn.userText);
+  const fact = questionFact(turn.userText, turn.focus);
   if (fact) { line = { zh: factLine(fact.subject, fact.predicate), en: 'According to the vehicle facts in this lesson.' }; intent = 'answer'; }
   if (!line) line = turn.role === 'dragon' ? SCRIPT.dWhy : SCRIPT.cAsk;
   if (turn.lesson !== 'nev-l4') line = { zh: turn.role === 'dragon' ? '请师傅教我。' : '我们一起看这个词。', en: 'Let us return to the words in this lesson.' };
@@ -272,6 +317,7 @@ export function validateNpc(candidate, turn) {
   if (!candidate || (!candidate.lookup && typeof candidate.zh !== 'string') || !['answer', 'ask_back', 'praise', 'error_demo', 'redirect', 'refuse'].includes(candidate.intent)) return { ok: false, reason: 'invalid_output' };
   if (candidate.seal === true) return { ok: false, reason: 'invalid_seal' };
   if (candidate.lookup && candidate.fact) return { ok: false, reason: 'invalid_lookup' };
+  if (turn.purpose === 'feedback' && candidate.lookup?.kind !== 'feedback') return { ok: false, reason: 'coaching_requires_verified_prompt' };
   const grounded = candidate.lookup ? renderLookup(candidate.lookup, turn) : null;
   if (candidate.lookup && (!grounded || candidate.intent !== 'answer')) return { ok: false, reason: 'invalid_lookup' };
   let zh = grounded ? grounded.zh : candidate.zh.trim();
@@ -288,7 +334,7 @@ export function validateNpc(candidate, turn) {
     return { ok: false, reason: 'unverified_evidence' };
   }
   if (candidate.fact) {
-    const fact = questionFact(turn.userText);
+    const fact = questionFact(turn.userText, turn.focus);
     if (!fact || candidate.fact.subject !== fact.subject || candidate.fact.predicate !== fact.predicate || candidate.intent !== 'answer') return { ok: false, reason: 'invalid_fact' };
     zh = factLine(fact.subject, fact.predicate);
   } else if (!grounded && candidate.intent !== 'error_demo') {
@@ -301,6 +347,7 @@ export function validateNpc(candidate, turn) {
   if ([...zh.replace(/[^\p{Script=Han}]/gu, '')].length > turn.maxChars || zh.length > 160) return { ok: false, reason: 'too_long', retry: true };
   const over = overLevel(zh, turn.level, turn.content);
   if (over.length > 2) return { ok: false, reason: 'too_difficult', retry: true };
+  if (!grounded && !candidate.fact && DIALOGUE[candidate.intent] && !DIALOGUE[candidate.intent].has(zh)) return { ok: false, reason: 'unverified_dialogue' };
   // Valid Chinese is not permission to append unchecked claims in another language.
   // Until free translations are independently validated, display only source-backed English.
   const english = grounded?.en || (candidate.fact ? renderLookup({ kind: 'fact', ...candidate.fact }, turn)?.en : '') || '';

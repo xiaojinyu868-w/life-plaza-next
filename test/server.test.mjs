@@ -38,6 +38,49 @@ test('no provider configuration never calls a remote service; original script fa
   const r = await service.npc(base);
   assert.equal(r.source, 'script'); assert.equal(r.seal, false); assert.equal(r.zh, '为什么叫混合动力汽车？');
 });
+test('coaching recomputes the answer using the trusted lesson and changes the second hint', async () => {
+  const body = { ...base, station: 'a', step: 'recog-engine', purpose: 'feedback', userText: '电池', correct: true, answer: '电池', attempt: 1 };
+  const firstTurn = cleanTurn(body); assert.equal(firstTurn.coaching.correct, false); assert.equal(firstTurn.coaching.target, '发动机');
+  assert.equal(validateNpc({ intent: 'praise', zh: '你说对了。', seal: false }, firstTurn).ok, false);
+  const first = validateNpc({ intent: 'answer', lookup: { kind: 'feedback', style: 'hint' }, seal: false }, firstTurn);
+  assert.equal(first.ok, true); assert.equal(first.value.grounding.correct, false); assert.match(first.value.zh, /发动机/); assert.equal(first.value.seal, false);
+  const second = await createServices(configuration({})).npc({ ...body, attempt: 2, history: [{ who: 'wang', zh: first.value.zh }] });
+  assert.notEqual(second.zh, first.value.zh); assert.equal(second.grounding.correct, false);
+  assert.throws(() => cleanTurn({ ...body, station: 'c' }), /unknown_coaching_prompt/);
+  assert.throws(() => cleanTurn({ ...body, lesson: 'nev-l5' }), /unknown_coaching_prompt/);
+});
+test('confirmation coaching gives an answer instead of incorrectly teaching the learner to ask a question', async () => {
+  const service = createServices(configuration({}));
+  const intro = await service.npc({ ...base, station: 'intro', step: 'intro-answer', purpose: 'feedback', userText: '你好' });
+  assert.match(intro.zh, /对/); assert.doesNotMatch(intro.zh, /对吗|再问/);
+  const fact = await service.npc({ ...base, station: 'c', step: 'confirm-fact-1', purpose: 'feedback', userText: '对' });
+  assert.match(fact.zh, /不是.*有发动机/); assert.doesNotMatch(fact.zh, /对吗|再问/);
+});
+test('model intent and final question marks cannot launder an invented learner error or vehicle claim', () => {
+  const turn = cleanTurn(base);
+  for (const candidate of [{ intent:'ask_back', zh:'也我有车。' }, { intent:'praise', zh:'它没有发动机，对吗？' }, { intent:'ask_back', zh:'纯电车有发动机吗？' }]) {
+    const result = validateNpc({ ...candidate, seal:false }, turn); assert.equal(result.ok, false);
+  }
+  assert.equal(validateNpc({ intent:'ask_back', zh:'为什么呀？师傅。', seal:false }, turn).ok, true);
+});
+test('pronoun facts follow the visible vehicle; explicit vehicle names take precedence', async () => {
+  const service = createServices(configuration({}));
+  const request = { ...base, role:'wang', focus:'bev', userText:'它有发动机吗？' };
+  const response = await service.npc(request); assert.match(response.zh, /没有发动机/);
+  const turn = cleanTurn(request);
+  assert.equal(validateNpc({ intent:'answer', lookup:{kind:'fact',subject:'phev',predicate:'engine'}, seal:false },turn).ok,false);
+  assert.equal(validateNpc({ intent:'answer', lookup:{kind:'fact',subject:'bev',predicate:'engine'}, seal:false },turn).ok,true);
+  assert.match((await service.npc({...request,userText:'插电式混合动力汽车有发动机吗？'})).zh,/它有发动机/);
+});
+test('diagnostic traces are opt-in, bounded, omit request secrets, and cannot change classroom results', async () => {
+  const events = [];
+  const service = createServices(configured(), { fetchImpl: async (_url, options) => { const request = JSON.parse(options.body); assert.equal(request.max_tokens, 80); return chat(output); }, onNpcTrace: e => { events.push(e); throw new Error('observer failure'); } });
+  const r = await service.npc(base); assert.equal(r.source, 'llm');
+  assert.deepEqual(events.map(e=>e.phase), ['request','response','validation','finish']);
+  assert.equal(events[0].requestIndex, 1); assert.equal(events[2].accepted, true); assert.equal(events[3].usage.complete, true);
+  assert.equal(events[1].usage.inputTokens, 50); assert.equal(events[1].content, JSON.stringify(output));
+  assert.doesNotMatch(JSON.stringify(events), /test-only|Bearer|Authorization|system/);
+});
 
 test('validated dialogue uses the same HSK data, reports all over-level tokens, never seals generated output', async () => {
   const service = createServices(configured(), { fetchImpl: async () => chat(output) });

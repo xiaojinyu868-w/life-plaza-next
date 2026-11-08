@@ -10,6 +10,15 @@ const H = require('../src/hsk.js');
 const l4 = require('../content/lessons/nev-l4.json');
 const l5 = require('../content/lessons/nev-l5.json');
 const copy = x => JSON.parse(JSON.stringify(x));
+test('read-only prompt inspection uses real lesson checks and cannot cross stations or execute actions', () => {
+  const before = JSON.stringify(l4);
+  const wrong = R.inspectPrompt(l4, { station: 'a', step: 'recog-engine', input: '动力电池' });
+  assert.equal(wrong.correct, false); assert.equal(wrong.target, '发动机');
+  assert.equal(R.inspectPrompt(l4, { station: 'a', step: 'recog-engine', input: '发动机' }).correct, true);
+  assert.equal(R.inspectPrompt(l4, { station: 'b', step: 'recog-engine', input: '发动机' }), null);
+  assert.equal(R.inspectPrompt(l5, { station: 'a', step: 'recog-engine', input: '发动机' }), null);
+  assert.equal(JSON.stringify(l4), before);
+});
 async function play(lesson, opts = {}) {
   let plugged = !!opts.initialPlugged;
   const events = [], results = [], asks = [], failures = [];
