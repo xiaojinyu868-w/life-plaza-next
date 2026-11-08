@@ -101,7 +101,7 @@ async function checkOnlineAndMobile(browser) {
   const teacher = await browser.newPage({ viewport: { width: 1200, height: 900 } });
   await teacher.goto(base + '/teacher.html'); await teacher.locator('#refresh').click();
   await teacher.locator('#results:not(.hidden)').waitFor();
-  const metricCount = await teacher.locator('.metric').count(); assert.equal(metricCount, 4);
+  const metricCount = await teacher.locator('.metric').count(); assert.equal(metricCount, 5);
   await teacher.screenshot({ path: path.join(output, 'teacher-summary.png') });
   await teacher.close(); await page.close(); assert.deepEqual(errors, []);
   return { errors, connectedFallbackAnswer: answer, serviceFailureFallback: fallback, mobileGeometry: geometry, teacherMetrics: metricCount };

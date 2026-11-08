@@ -22,7 +22,7 @@
 <script>
 'use strict';
 const $=id=>document.getElementById(id);let snapshot=null;
-const fields=[['sessions','匿名会话'],['completedSessions','完成课堂的会话'],['speechAttempts','语音尝试'],['hints','使用提示']];
+const fields=[['sessions','匿名会话'],['completedSessions','完成课堂的会话'],['speechAttempts','识别到文字的语音尝试'],['pronunciationAttempts','获得声调结果的跟读'],['hints','使用提示']];
 const names={'nev-l4':'第4课 · 认识插电式混合动力汽车','nev-l5':'第5课 · 能量回收（教学样例）'};
 $('access').addEventListener('submit',async event=>{
  event.preventDefault();$('refresh').disabled=true;$('status').textContent='正在读取…';

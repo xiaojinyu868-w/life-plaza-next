@@ -14,6 +14,7 @@
   const LESSON = window.CDG_CURRENT_LESSON;
   const NET = window.CDG_NET ? window.CDG_NET.createClient() : null;
   let capabilities = {}, conversationOpen = false, currentStep = '', cloudRecording = null, micBusy = false, micConsent = false;
+  let speechDialog = null, micEpoch = 0;
   let attemptSource = 'text', speechResult = null, promptSerial = 0;
   const chatHistory = [];
   const lessonId = () => LESSON?.id || 'nev-l4';
@@ -25,7 +26,7 @@
   async function toggleOnline() {
     if (!NET) return;
     const b = $('tools').querySelector('[data-t="online"]');
-    if (NET.enabled) { NET.setEnabled(false); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
+    if (NET.enabled) { NET.setEnabled(false); if (speechDialog) closeModal(); cancelCloudRecording(); if (rec) rec.abort(); capabilities = {}; b.textContent = '离线'; b.setAttribute('aria-pressed', 'false'); toast('已切回离线；所有课程步骤和离线语料仍可用。'); return; }
     if (!/^https?:$/.test(location.protocol)) { toast('这是离线文件。需要联机时，请从本机服务地址打开；当前仍可完整上课。'); return; }
     NET.setEnabled(true); b.textContent = '连接中…';
     try {
@@ -66,27 +67,35 @@
   // ---- Marble 场景（World Labs 高斯泼溅）：作为车间环境，可交互的车、零件、人物仍是网格 ----
   const SPL = window.CDG_SPLAT;
   let SW = null; try { if (R.webgl2 && SPL) SW = new SPL.SplatWorld(R.gl); } catch (e) { console.warn('splat init', e); }
-  const MAR = { name: '', format: '', n: 0, loaded: false, hideShell: true };
+  const MAR = { name: '', format: '', n: 0, loaded: false, hideShell: true, autoLOD: true, loadSerial: 0, phase: '' };
   const placeKey = (nm) => 'cdg.marble.place.' + nm;
   const defaultPlace = (meta) => (meta && meta.metricScale ? { scale: meta.metricScale, flip: true, y: meta.groundOffset || 0, x: 0, z: 0, yaw: 0 } : { scale: 1, flip: true, y: 1.5, x: 0, z: 0, yaw: 0 });
   async function loadMarble(buf, name, meta, place) {
     if (!SW) { toast('这台设备不支持 WebGL2，无法显示 Marble 场景'); return false; }
+    const serial = ++MAR.loadSerial;
     toast(`正在载入 Marble 场景：${esc(name)} …`);
     try {
-      const d = await SPL.decode(buf, name);
       let pl = place || null; try { const s0 = localStorage.getItem(placeKey(name)); if (s0) pl = JSON.parse(s0); } catch (e) {}
       SW.place = Object.assign({ scale: 1, yaw: 0, flip: true, x: 0, y: 0, z: 0 }, pl || defaultPlace(meta));
       if (pl && pl.bright) SW.bright = pl.bright;
-      SW.setData(d); R.splat = SW;
+      await SW.load(buf, name, { pointBudget: 100000, onProgress(progress) {
+        if (serial !== MAR.loadSerial) return;
+        const phases = { loading: '正在读取场景', decompress: '正在解压场景', decode: '正在解析场景', decoded: '解析完成', select: '正在选择场景细节', pack: '正在准备画面', ready: '' };
+        MAR.phase = phases[progress.phase] ?? '';
+        const label = scenePanel?.querySelector('[data-load-status]'); if (label) label.textContent = MAR.phase;
+      } });
+      if (serial !== MAR.loadSerial) return false;
+      const d = SW.src;
+      SW.setAutoLOD({ enabled: MAR.autoLOD, targetMs: 1000 / 30, minPoints: 25000 }); R.splat = SW;
       MAR.meta = meta || null; MAR.saved = !!pl;
       applyLayout('marble');
       Object.assign(MAR, { name, format: d.format, n: d.n, loaded: true });
       W.shell.visible = !MAR.hideShell;
       R.env.clear = hex('#e9e4da');
       if (!pl && !(meta && meta.metricScale)) autoAlign(); else fitLayout();
-      toast(`Marble 场景已载入：${esc(name)} · ${d.n.toLocaleString()} 个高斯点`, 'zhu');
+      toast(`Marble 场景已载入：${esc(name)} · 当前显示 ${SW.getMetadata().activePoints.toLocaleString()} 个点`, 'zhu');
       renderScenePanel(); return true;
-    } catch (e) { console.error(e); toast('载入失败：' + esc(e.message || e)); return false; }
+    } catch (e) { if (serial === MAR.loadSerial) { MAR.phase = ''; console.error(e); toast('载入失败：' + esc(e.message || e)); renderScenePanel(); } return false; }
   }
   // 自动对齐：地面放到 y=0，房间中心对准车间布局中心（保持 Marble 的真实尺度）
   // ---- 房间边界：用高斯点 5%–95% 分位数估计（不是语义分割，也不是米制标定）----
@@ -148,7 +157,7 @@
     const u = metric() ? '米' : '个场景单位（未标定，不一定等于米）';
     toast(`已自动对齐。估计跨度 ${(ROOM.x1 - ROOM.x0).toFixed(1)} × ${(ROOM.z1 - ROOM.z0).toFixed(1)} ${u}。${FIT.length ? '有 ' + FIT.length + ' 处放不下，见“场景”面板' : '各工位都放得下'}`);
   }
-  function unloadMarble() { R.splat = null; MAR.loaded = false; ROOM = null; FIT = []; W.shell.visible = true; R.env.clear = hex('#efe7d8'); applyLayout('code'); renderScenePanel(); }
+  function unloadMarble() { MAR.loadSerial++; MAR.phase = ''; R.splat = null; MAR.loaded = false; ROOM = null; FIT = []; W.shell.visible = true; R.env.clear = hex('#efe7d8'); applyLayout('code'); renderScenePanel(); }
   function b64ToBuf(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; }
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', async (e) => {
@@ -167,8 +176,11 @@
       <div style="padding:8px 12px 12px">
         ${SW ? '' : '<div class="lock">这台设备不支持 WebGL2，不能显示 Marble 场景。</div>'}
         <label class="btnfile">载入 Marble 文件（.spz / .ply / .splat）<input type="file" accept=".spz,.ply,.splat" data-file="1" hidden></label>
+        <div class="pending" data-load-status role="status">${esc(MAR.phase)}</div>
         <div class="pending" style="margin:6px 0 10px">也可以直接把文件拖进窗口。在 Marble 网页里导出 Gaussian Splat（.spz）即可。车、零件、王明和小龙会叠在场景上，照常可以点、可以学。</div>
         ${MAR.loaded ? `<label class="chk"><input type="checkbox" data-hide="1" ${MAR.hideShell ? 'checked' : ''}> 隐藏代码画的墙、地面、灯</label>
+        <label class="chk">场景细节 <select data-point-budget="1" aria-label="场景点数上限">${splatOptions()}</select></label>
+        <label class="chk"><input type="checkbox" data-auto-lod="1" ${MAR.autoLOD ? 'checked' : ''}> 画面持续卡顿时减少场景点数</label><div class="pending" data-lod-status>${splatStatus()}</div>
         <label class="chk"><input type="checkbox" data-flip="1" ${P.flip ? 'checked' : ''}> 上下翻转（Marble 导出的一般要勾上）</label>
         ${sl('scale', '缩放', 0.2, 6, 0.01, P.scale)}${sl('y', '高度', -6, 6, 0.01, P.y)}${sl('yaw', '旋转', -3.1416, 3.1416, 0.01, P.yaw)}${sl('x', '左右', -25, 25, 0.05, P.x)}${sl('z', '前后', -25, 25, 0.05, P.z)}${sl('bright', '亮度', 0.5, 1.6, 0.01, SW.bright)}
         <div class="btns"><button type="button" data-auto="1">自动对齐</button><button type="button" data-save="1">保存位置</button><button type="button" data-copy="1">复制参数</button><button type="button" data-unload="1" class="ghost">换回代码车间</button></div>
@@ -181,6 +193,8 @@
     const u = metric() ? '米' : '场景单位';
     return `<div class="lock" style="border-style:solid">估计跨度 ${(ROOM.x1 - ROOM.x0).toFixed(1)} × ${(ROOM.z1 - ROOM.z0).toFixed(1)} ${u}（按高斯点分布估计，不是实测）。${FIT.length ? '<br><b style="color:var(--ll-new)">放不下：</b>' + FIT.map(esc).join('；') + '。可以把“缩放”调大一点，或换一个更宽的车间。' : '<br>各工位都在房间里。'}</div>`;
   }
+  function splatStatus() { const m = SW?.getMetadata(); return m ? `显示 ${m.activePoints.toLocaleString()} / ${m.sourcePoints.toLocaleString()} 个点；车辆和可操作零件保持完整。` : ''; }
+  function splatOptions() { const current = SW.getMetadata().requestedBudget; return [...new Set([25000,50000,100000,250000,500000,current])].sort((a,b) => a-b).map(n => `<option value="${n}" ${current === n ? 'selected' : ''}>${n/10000} 万点</option>`).join(''); }
   document.addEventListener('input', (e) => {
     const r = e.target; if (!r.closest || !r.closest('.scene-panel') || r.type !== 'range' || !SW) return;
     const k = r.dataset.k, v = parseFloat(r.value); if (r.nextElementSibling) r.nextElementSibling.textContent = v.toFixed(2);
@@ -192,6 +206,8 @@
     if (t.dataset.file && t.files && t.files[0]) await loadMarble(await t.files[0].arrayBuffer(), t.files[0].name);
     if (t.dataset.hide) { MAR.hideShell = t.checked; W.shell.visible = !t.checked; }
     if (t.dataset.flip && SW) { SW.setPlacement({ flip: t.checked }); fitLayout(); renderScenePanel(); }
+    if (t.dataset.pointBudget && SW) { SW.setPointBudget(Number(t.value)); renderScenePanel(); }
+    if (t.dataset.autoLod && SW) { MAR.autoLOD = t.checked; SW.setAutoLOD({ enabled: t.checked, targetMs: 1000 / 30, minPoints: 25000 }); }
   });
   document.addEventListener('click', (e) => {
     const t = e.target; if (!t.closest || !t.closest('.scene-panel')) return;
@@ -249,7 +265,11 @@
   function flows(P, o) { for (const k of Object.keys(P.flows)) if (k in o) P.flows[k].on = o[k]; }
   let last = performance.now(), T = 0;
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now; T += dt;
+    const frameMs = now - last, dt = Math.min(0.05, frameMs / 1000); last = now; T += dt;
+    if (MAR.loaded && MAR.autoLOD && !document.hidden && SW.observeFrame(frameMs)) {
+      const status = scenePanel?.querySelector('[data-lod-status]'); if (status) status.textContent = splatStatus();
+      const select = scenePanel?.querySelector('[data-point-budget]'); if (select) select.innerHTML = splatOptions();
+    }
     E.stepTweens(dt);
     clampCam();
     for (const f of W.allFlows()) f.update(dt);
@@ -335,18 +355,73 @@
     if (!SR) { toast('这个浏览器不支持语音识别：请打字（拼音也可以）或点选'); return; }
     if (rec) { try { rec.stop(); } catch (e) {} return; }
     let final = '';
+    const startedAt = FLOW, prompt = askState;
     try {
       rec = new SR(); rec.lang = 'zh-CN'; rec.interimResults = true; rec.maxAlternatives = 1;
-      rec.onresult = (e) => { let s = ''; for (const r of e.results) s += r[0].transcript; $('inp').value = s; if (e.results[e.results.length - 1].isFinal) final = s; };
+      const recognition = rec;
+      rec.onresult = (e) => { if (rec !== recognition || !NET?.enabled || startedAt !== FLOW || prompt !== askState) return; let s = ''; for (const r of e.results) s += r[0].transcript; $('inp').value = s; if (e.results[e.results.length - 1].isFinal) final = s; };
       rec.onerror = (e) => toast(`语音识别没成功（${e.error}）：可以打字或点选`);
-      const startedAt = FLOW, prompt = askState;
-      rec.onend = () => { $('mic').classList.remove('rec'); rec = null; if (final && startedAt === FLOW && prompt === askState) { attemptSource = 'browser_asr'; speechResult = null; submit(final, false); toast('已识别文字；浏览器识别没有评测发音。'); } };
+      rec.onend = () => { if (rec !== recognition) return; $('mic').classList.remove('rec'); rec = null; if (final && NET?.enabled && startedAt === FLOW && prompt === askState) { attemptSource = 'browser_asr'; speechResult = null; submit(final, false); toast('已识别文字；浏览器识别没有评测发音。'); } };
       rec.start(); $('mic').classList.add('rec');
     } catch (e) { rec = null; toast('语音识别启动失败：可以打字或点选'); }
   }
-  function cancelCloudRecording() { if (cloudRecording) cloudRecording.stop(true); cloudRecording = null; $('mic').classList.remove('rec'); $('mic').textContent = '🎤 说'; }
+  function cancelCloudRecording() {
+    micEpoch++; micBusy = false;
+    if (cloudRecording) cloudRecording.capture.stop(true);
+    cloudRecording = null; $('mic').classList.remove('rec'); $('mic').textContent = '🎤 说';
+  }
+  function practiceState(text = '') {
+    if (!speechDialog) return;
+    const m = speechDialog.m;
+    m.querySelector('[data-practice-status]').textContent = text;
+    m.querySelectorAll('[data-practice-drill], [data-practice-listen], [data-practice-submit]').forEach(b => { b.disabled = micBusy || !!cloudRecording; });
+    const record = m.querySelector('[data-practice-record]');
+    if (record) { record.disabled = micBusy; record.textContent = cloudRecording ? '停止并发送' : '再读一次'; record.classList.toggle('recording', !!cloudRecording); }
+  }
+  function showPronunciation(result, context) {
+    const view = window.CDG_PRONUNCIATION.describe(result, context.target, LESSON?.vocabulary);
+    if (!view.measured && !view.transcript) throw new Error('no_speech_evidence');
+    let dialog = speechDialog;
+    if (!dialog) {
+      const m = modal('');
+      dialog = speechDialog = { m, prompt: context.prompt, flow: context.flow, rootTarget: context.prompt?.cfg.speechTarget || '' };
+      conversationOpen = true;
+      m.querySelector('.box').setAttribute('role', 'dialog');
+      m.querySelector('.box').setAttribute('aria-modal', 'true');
+      m.querySelector('.box').setAttribute('aria-labelledby', 'practiceTitle');
+      m.classList.add('pronunciation');
+    }
+    dialog.view = view; dialog.result = result; dialog.target = context.target;
+    const drills = [...new Set([...view.drills, dialog.rootTarget].filter(Boolean))];
+    const maySubmit = view.canSubmit && (!dialog.rootTarget || context.target === dialog.rootTarget);
+    dialog.m.querySelector('.box').innerHTML = `<button class="close" data-x="1" aria-label="返回本题">×</button>
+      <div class="practice-eyebrow">听 · 试 · 再说一次</div><h2 id="practiceTitle">${esc(view.title)}</h2>
+      ${view.measured ? `<p class="practice-reference">${ruby(context.target)}</p>` : ''}
+      ${view.score === null ? '' : `<p class="practice-score">发音参考 <b>${view.score}</b><small>自动评测，仅供练习</small></p>`}
+      <div class="practice-feedback">${view.issues.map(issue => `<p><strong>${esc(issue.title)}</strong><span>${esc(issue.instruction)}</span><small>${esc(issue.en)}</small></p>`).join('') || `<p>${view.measured ? '这次可评测的声调没有发现差异。可以听示范，再读一遍。' : '请看一下，识别的文字对不对。'}</p>`}</div>
+      ${view.transcript ? `<p class="practice-transcript">听到：<strong>${esc(view.transcript)}</strong></p>` : ''}
+      ${drills.length ? `<div class="practice-drills" aria-label="选择跟读内容">${drills.map((s, i) => `<button type="button" data-practice-drill="${i}" aria-pressed="${s === context.target}">${esc(s)}</button>`).join('')}</div><div class="practice-actions"><button type="button" data-practice-listen>听示范</button><button type="button" data-practice-record>再读一次</button></div>` : ''}
+      <p class="practice-status" data-practice-status role="status" aria-live="polite"></p><p class="practice-note">${esc(view.note)}</p>
+      <div class="practice-footer">${maySubmit ? '<button type="button" data-practice-submit>用识别结果回答</button>' : ''}<button type="button" data-x="1">返回本题</button></div>`;
+    dialog.m.querySelectorAll('[data-practice-drill]').forEach(b => { b.onclick = () => {
+      dialog.target = drills[Number(b.dataset.practiceDrill)];
+      dialog.m.querySelectorAll('[data-practice-drill]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+      practiceState('跟读：' + dialog.target);
+    }; });
+    const listen = dialog.m.querySelector('[data-practice-listen]');
+    if (listen) listen.onclick = async () => { const said = await speak(dialog.target, 'wang'); if (dialog === speechDialog && !said) practiceState('当前没有可用的中文示范声音。可以照着拼音练习。'); };
+    const record = dialog.m.querySelector('[data-practice-record]'); if (record) record.onclick = micToggle;
+    const answer = dialog.m.querySelector('[data-practice-submit]');
+    if (answer) answer.onclick = () => {
+      if (dialog.prompt !== askState || dialog.flow !== FLOW || !NET.enabled) { closeModal(); return; }
+      const transcript = view.transcript; closeModal(); speechResult = result; attemptSource = 'cloud_asr'; $('inp').value = transcript; submit(transcript, false); speechResult = null;
+    };
+    if (view.measured) track('pronunciation_attempt', { target: context.target, score: view.score, capability: 'L2' });
+    (record || answer || dialog.m.querySelector('[data-x]')).focus();
+  }
   async function micToggle() {
     if (micBusy) return;
+    if (!askState) { toast('请在本题的跟读或作答时使用语音。'); return; }
     if (!NET?.enabled) { toast('当前为离线模式。可以打字、输入拼音或点选；使用联网语音请先开启“联机”。'); return; }
     if (!micConsent) {
       const m = modal('<button class="close" data-x="1">×</button><h2>用语音练习</h2><p>录音会发送至本机服务所配置的语音供应商；浏览器识别可能使用浏览器厂商的网络服务。本课件不保存录音，联机时记录匿名练习结果。供应商的数据处理规则由部署方说明。</p><p>也可以继续打字或点选，课程不会受影响。</p><button type="button" data-consent="1">同意本次语音练习</button>');
@@ -354,30 +429,33 @@
     }
     if (!capabilities.asr && !capabilities.assessment) return browserMic();
     if (cloudRecording) {
-      const recording = cloudRecording; cloudRecording = null; const blob = recording.stop();
+      const context = cloudRecording; cloudRecording = null; const blob = context.capture.stop();
       $('mic').classList.remove('rec'); $('mic').textContent = '识别中…';
-      if (!blob) { $('mic').textContent = '🎤 说'; return; }
-      const prompt = askState, flow = FLOW; micBusy = true;
+      if (!blob) { $('mic').textContent = '🎤 说'; practiceState('没有录到声音。可以再试一次，或返回本题。'); return; }
+      const { prompt, flow, target, epoch } = context; micBusy = true; practiceState('正在听这次录音…');
       try {
         const form = new FormData(); form.append('audio', blob, 'speech.wav');
-        const target = prompt?.cfg.speechTarget || '';
-        for (const [k, v] of Object.entries({ mode: target ? 'read' : 'open', refText: target, level: ST.level, sessionId: NET.sessionId, station: ST.station || 'intro', step: currentStep })) form.append(k, String(v));
-        const r = await NET.request('/api/speech/assess', form, 15000);
-        if (flow !== FLOW || prompt !== askState || !NET.enabled) return;
-        if (!r.ok || !r.transcript) throw new Error('no_transcript');
-        speechResult = r; attemptSource = 'cloud_asr'; $('inp').value = r.transcript; submit(r.transcript, false);
-        const issues = Array.isArray(r.issues) ? r.issues.filter(x => typeof x.say === 'string') : [];
-        toast(r.overall == null ? '已识别文字；本次没有发音评分。' : `发音参考 ${Number(r.overall)} · ${esc(issues.map(x => x.say).join(' ') || '听示范，再练一次。')}`);
-      } catch (_) { if (NET.enabled && flow === FLOW && prompt === askState) { toast('云端语音暂不可用，改用浏览器识别；它只识别文字，不评发音。'); browserMic(); } }
-      finally { micBusy = false; $('mic').textContent = '🎤 说'; speechResult = null; }
+        for (const [k, v] of Object.entries({ mode: target ? 'read' : 'open', refText: target, lesson: lessonId(), level: ST.level, sessionId: NET.sessionId, station: ST.station || 'intro', step: currentStep })) form.append(k, String(v));
+        const r = await NET.request('/api/speech/assess', form, 16000);
+        if (epoch !== micEpoch || flow !== FLOW || prompt !== askState || !NET.enabled) return;
+        if (!r.ok) throw new Error('speech_unavailable');
+        showPronunciation(r, context);
+      } catch (_) { if (NET.enabled && epoch === micEpoch && flow === FLOW && prompt === askState) {
+        if (speechDialog) practiceState('这次没有可靠结果。可以重试，或返回本题打字、点选。');
+        else { toast('云端语音暂不可用，改用浏览器识别；它只识别文字，不评发音。'); browserMic(); }
+      } }
+      finally { if (epoch === micEpoch) { micBusy = false; $('mic').textContent = '🎤 说'; practiceState(speechDialog?.m.querySelector('[data-practice-status]')?.textContent || ''); } }
       return;
     }
     micBusy = true;
-    try { const flow = FLOW; const recording = await window.CDG_SPEECH.start({ onLimit: () => micToggle() });
-      if (flow !== FLOW || !NET.enabled) { recording.stop(true); return; }
-      cloudRecording = recording; $('mic').classList.add('rec'); $('mic').textContent = '停止并发送';
-    } catch (_) { toast('无法打开录音。可继续打字、输入拼音或点选。'); }
-    finally { micBusy = false; }
+    const flow = FLOW, prompt = askState, epoch = ++micEpoch, target = speechDialog?.target || prompt?.cfg.speechTarget || '';
+    practiceState('正在打开麦克风…');
+    try { if (window.speechSynthesis) speechSynthesis.cancel();
+      const capture = await window.CDG_SPEECH.start({ onLimit: () => micToggle() });
+      if (epoch !== micEpoch || flow !== FLOW || prompt !== askState || !NET.enabled) { capture.stop(true); return; }
+      cloudRecording = { capture, flow, prompt, target, epoch }; $('mic').classList.add('rec'); $('mic').textContent = '停止并发送';
+    } catch (_) { if (epoch === micEpoch) { toast('无法打开录音。可继续打字、输入拼音或点选。'); practiceState('麦克风未打开。可以重试或返回本题。'); } }
+    finally { if (epoch === micEpoch) { micBusy = false; practiceState(cloudRecording ? '正在录音；读完后点“停止并发送”。' : ''); } }
   }
 
   // =========================================================== 字幕
@@ -477,6 +555,7 @@
   function submit(text, chip) {
     const A = askState; if (!A) return;
     const t = String(text || '').trim(); if (!t) return;
+    if (cloudRecording || micBusy) cancelCloudRecording();
     if (/asr/.test(attemptSource) && !chip) ST.spoken++;
     if (chip && /^✓ 我读了/.test(t)) ST.selfReported++;
     if (!chip || !/^(✓|跳过|先不插)/.test(t)) ST.responses++;
@@ -503,6 +582,12 @@
     }
   }
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' && speechDialog) {
+      const buttons = [...speechDialog.m.querySelectorAll('button:not(:disabled)')];
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !speechDialog.m.contains(document.activeElement))) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && (document.activeElement === last || !speechDialog.m.contains(document.activeElement))) { e.preventDefault(); first?.focus(); }
+    }
     if (e.key === 'Escape') { if (modal2El) { modal2El.remove(); modal2El = null; } else { closeCard(); closeModal(); } }
     if (e.code === 'Space' && document.activeElement !== $('inp') && sayResolve && !document.querySelector('.modal')) { e.preventDefault(); sayResolve(); }
   });
@@ -590,7 +675,7 @@
   let modalEl = null, modal2El = null;
   function modal2(html) { if (modal2El) modal2El.remove(); modal2El = document.createElement('div'); modal2El.className = 'modal'; modal2El.style.zIndex = 86; modal2El.innerHTML = `<div class="box">${html}</div>`; modal2El.addEventListener('click', (e) => { if (e.target === modal2El || e.target.closest('[data-x]')) { modal2El.remove(); modal2El = null; } }); document.body.append(modal2El); return modal2El; }
   function modal(html) { closeModal(); modalEl = document.createElement('div'); modalEl.className = 'modal'; modalEl.innerHTML = `<div class="box">${html}</div>`; modalEl.addEventListener('click', (e) => { if (e.target === modalEl || e.target.closest('[data-x]')) closeModal(); }); document.body.append(modalEl); return modalEl; }
-  function closeModal() { if (modalEl) modalEl.remove(); modalEl = null; conversationOpen = false; }
+  function closeModal() { if (speechDialog) { speechDialog = null; cancelCloudRecording(); if (window.speechSynthesis) speechSynthesis.cancel(); $('inp').focus(); } if (modalEl) modalEl.remove(); modalEl = null; conversationOpen = false; }
 
   // 纠错卡（≤2 条建议，重写整句）
   let fixEl = null;

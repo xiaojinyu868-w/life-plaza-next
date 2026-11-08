@@ -10,6 +10,7 @@
 - 已整理产品方向、代码来源、现有实现缺口、首个学习闭环与接口边界。
 - 已导入用户深化包中的插电工坊源码，加入课程 JSON 运行器、服务端代理、脚本降级、匿名事件与教师汇总。模型与语音需要运行时配置；没有配置时不请求第三方服务、不伪造分数。
 - 第 4 课是新能源汽车车间；第 5 课是“能量回收”自编待审课程样例。实际 Marble 车间、真实模型质量、真人发音与正式部署仍待验收。
+- 已加入腾讯 SOE 服务端协议适配、声调反馈与再次跟读界面，以及 Marble 空间选点和可逆细节档位。协议/界面使用模拟语音验证；点云已在本机 RTX 4060 的 Edge 中验证，均不替代真人与核显验收。
 - 已创建独立私有仓库：[xiaojinyu868-w/life-plaza-next](https://github.com/xiaojinyu868-w/life-plaza-next)。本目录只连接这个新远端。
 
 ## 阅读入口
@@ -26,6 +27,7 @@
 | [本轮验证](docs/VALIDATION.md) | 实际测试结果、浏览器证据与未完成项 |
 | [课程格式](docs/LESSONS.md) | 声明式课程与第 5 课样例 |
 | [Marble 工具](docs/MARBLE-TOOLS.md) | 降采样和 SPZ v3 对照验证 |
+| [腾讯语音适配](docs/TENCENT-SOE.md) | 服务端签名、声调字段与真实接入边界 |
 | [运行与部署](docs/DEPLOYMENT.md) | 本机、内网与配置生效方式 |
 
 ## 本机运行
@@ -50,11 +52,13 @@ npm run test:rules
 npm run test:layout
 npm run test:flow
 npm run test:flow:unplugged
-node --test test/net.test.js test/server.test.mjs test/splat-downsample.test.mjs test/lesson.test.js
+npm run test:services
 ```
 
 规则和假 DOM 流程测试验证教学逻辑；服务端测试使用隔离目录及假供应商，不调用收费服务。真实浏览器、真实供应商和真人测评分别验收，不能把自动测试结果当成教育效果。
 
 可选浏览器检查：先 `npm ci` 安装开发依赖，在另一个终端保持本机服务运行，再执行 `npm run test:browser`。默认使用已安装的 Edge；生成的报告和截图在 `artifacts/browser/`。脚本使用自动输入，不能替代真人语音与教学审阅。测试服务建议用独立的 `WORKSHOP_DATA_DIR`，以免把测试会话混入正式课堂。
+
+`npm run test:speech-ui` 自行启动隔离测试服务，检查桌面和手机的跟读、失败、关闭、切题与断网流程；使用合成麦克风和假供应商回复，不上传真人录音。可选 `node scripts/browser-splat-check.cjs <本地500k官方v3样本路径>` 需要提前取得验证样本，不会下载或内嵌素材；报告在 `artifacts/splat-browser/`。
 
 原始转写、教材原页、凭据、运行数据与交付 ZIP 不进入 Git。保留 HSK 数据署名，见 [NOTICE.md](NOTICE.md)。

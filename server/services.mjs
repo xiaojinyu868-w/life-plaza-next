@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { createTencentSoe } from './tencent-soe.mjs';
 import { DATA, ERROR_SAMPLES, ROOT, SESSION_RE, cleanTurn, fallbackTurn, validateNpc, readLesson } from './canonical.mjs';
 
 export class HttpError extends Error {
@@ -20,6 +21,7 @@ export function configuration(env = process.env) {
     llmUrl: allowedEndpoint(env.WORKSHOP_LLM_URL), llmKey: env.WORKSHOP_LLM_API_KEY || '', llmModel: env.WORKSHOP_LLM_MODEL || '',
     asrUrl: allowedEndpoint(env.WORKSHOP_ASR_URL), asrKey: env.WORKSHOP_ASR_API_KEY || '', asrModel: env.WORKSHOP_ASR_MODEL || '',
     assessmentUrl: allowedEndpoint(env.WORKSHOP_ASSESSMENT_URL), assessmentKey: env.WORKSHOP_ASSESSMENT_API_KEY || '',
+    tencentSoe: { appId: env.WORKSHOP_TENCENT_APP_ID || '', secretId: env.WORKSHOP_TENCENT_SECRET_ID || '', secretKey: env.WORKSHOP_TENCENT_SECRET_KEY || '', scoreCoeff: number('WORKSHOP_TENCENT_SCORE_COEFF', 1, 1, 4), timeoutMs: 10000 },
     corpusToken: env.WORKSHOP_CORPUS_TOKEN || '', corpusBase: 'https://corpus.chineseplus.net/api/v1',
     teacherToken: env.WORKSHOP_TEACHER_TOKEN || '', publicOrigin: env.WORKSHOP_PUBLIC_ORIGIN || '',
     llmSessionLimit: number('WORKSHOP_LLM_SESSION_LIMIT', 30, 1, 1000),
@@ -30,7 +32,8 @@ export function configuration(env = process.env) {
   };
 }
 
-export function createServices(config, { fetchImpl = fetch, now = Date.now } = {}) {
+export function createServices(config, { fetchImpl = fetch, now = Date.now, tencentFactory = createTencentSoe } = {}) {
+  const tencent = tencentFactory(config.tencentSoe || {});
   const active = { llm: 0, speech: 0 };
   const sessions = new Map();
   const inflight = new Map();
@@ -40,7 +43,8 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now } = {
   const capabilities = () => ({
     npc: Boolean(config.llmUrl && config.llmModel && config.llmKey),
     asr: Boolean(config.asrUrl && config.asrModel && config.asrKey),
-    assessment: Boolean(config.assessmentUrl && config.assessmentKey),
+    assessment: tencent.configured || Boolean(config.assessmentUrl && config.assessmentKey),
+    assessmentVendor: tencent.configured ? 'tencent-soe' : config.assessmentUrl && config.assessmentKey ? 'private-adapter' : null,
     corpusRemote: Boolean(config.corpusToken), events: true,
     audioStored: false, transcriptStored: false,
   });
@@ -138,25 +142,33 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now } = {
     const refText = String(form.get('refText') || '').trim();
     const audio = form.get('audio');
     if (!SESSION_RE.test(sessionId || '') || !['read', 'open'].includes(mode) || refText.length > 200 || (mode === 'read' && !refText)) throw new HttpError(400, 'invalid_speech_metadata');
+    const lesson = readLesson(form.get('lesson') || 'nev-l4');
+    if (!lesson || (form.get('station') && !lesson.stations.some(s => s.id === form.get('station')))) throw new HttpError(400, 'invalid_speech_context');
     if (!(audio instanceof Blob) || !audio.size || audio.size > 4_000_000 || !/^(audio\/(wav|wave|x-wav|webm|ogg|mpeg|mp4)|video\/webm)(;|$)/.test(audio.type)) throw new HttpError(400, 'invalid_audio');
     if (active.speech >= config.maxConcurrent) throw new HttpError(429, 'speech_busy');
     const caps = capabilities();
     if (!caps.assessment && !caps.asr) return { ok: false, capability: 'unavailable', mode, transcript: '', overall: null, words: [], issues: [], vendor: null, seal: false, fallback: 'browser', reason: 'not_configured', latencyMs: 0 };
     budget(sessionId, 'speech', config.speechSessionLimit);
     active.speech++;
-    let assessmentReason = '';
+    let assessmentReason = mode === 'open' ? 'open_requires_independent_asr' : '';
     try {
-      if (caps.assessment) {
+      if (caps.assessment && mode === 'read') {
         try {
-          const body = new FormData();
-          body.set('audio', audio, audio.type.includes('wav') ? 'speech.wav' : 'speech.webm');
-          body.set('mode', mode); body.set('refText', refText);
-          const r = await provider(config.assessmentUrl, body, { json: false, timeoutMs: 10000, headers: { Authorization: `Bearer ${config.assessmentKey}` } });
-          if (r.ok && typeof r.transcript === 'string' && Number.isFinite(r.overall) && r.overall >= 0 && r.overall <= 100 && Array.isArray(r.words)) {
-            const words = normalizeAssessment(r.words);
+          let r;
+          if (tencent.configured) r = await tencent.assess({ audio, referenceText: refText, mode });
+          else {
+            const body = new FormData();
+            body.set('audio', audio, audio.type.includes('wav') ? 'speech.wav' : 'speech.webm');
+            body.set('mode', mode); body.set('refText', refText);
+            r = await provider(config.assessmentUrl, body, { json: false, timeoutMs: 10000, headers: { Authorization: `Bearer ${config.assessmentKey}` } });
+          }
+          if (r.ok && Number.isFinite(r.overall) && r.overall >= 0 && r.overall <= 100 && Array.isArray(r.words)) {
+            const words = normalizeAssessment(r.words, refText);
             // Vendor normalizer must supply explicit tone reference and observation. No tone inference from ASR.
             const tones = words.flatMap((w) => w.chars).filter((c) => c.tone && c.tone.got != null);
-            if (tones.length) return { ok: true, capability: 'L2', mode, transcript: r.transcript.slice(0, 1000), overall: r.overall, words, issues: toneFeedback(words, refText), vendor: String(r.vendor || 'assessment-adapter').slice(0, 80), seal: false, latencyMs: now() - start };
+            // Reference-aligned vendor Word fields are not an independent transcript.
+            const transcript = r.transcriptSource === 'recognition' && typeof r.transcript === 'string' ? r.transcript.slice(0, 1000) : '';
+            if (tones.length) return { ok: true, capability: 'L2', mode, referenceText: refText, transcript, transcriptSource: transcript ? 'recognition' : 'none', overall: r.overall, words, issues: toneFeedback(words, refText), vendor: String(r.vendor || 'assessment-adapter').slice(0, 80), seal: false, latencyMs: now() - start };
           }
           assessmentReason = 'assessment_missing_tone_evidence';
         } catch (e) { assessmentReason = e.code || 'assessment_unavailable'; }
@@ -166,9 +178,11 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now } = {
         body.set('file', audio, audio.type.includes('wav') ? 'speech.wav' : 'speech.webm');
         body.set('model', config.asrModel); body.set('language', 'zh'); body.set('response_format', 'json');
         // Do not send refText as an ASR prompt: that can conceal learner pronunciation errors.
-        const r = await provider(config.asrUrl, body, { json: false, timeoutMs: 10000, headers: { Authorization: `Bearer ${config.asrKey}` } });
+        const remaining = 14000 - (now() - start);
+        if (remaining <= 0) throw new HttpError(504, 'provider_timeout');
+        const r = await provider(config.asrUrl, body, { json: false, timeoutMs: Math.min(10000, remaining), headers: { Authorization: `Bearer ${config.asrKey}` } });
         if (typeof r.text !== 'string') throw new HttpError(502, 'invalid_asr_response');
-        return { ok: true, capability: 'L1', mode, transcript: r.text.slice(0, 1000), overall: null, words: [], issues: [], vendor: 'openai-compatible-asr', seal: false, assessmentReason: assessmentReason || 'not_configured', latencyMs: now() - start };
+        return { ok: true, capability: 'L1', mode, transcript: r.text.slice(0, 1000), transcriptSource: 'recognition', overall: null, words: [], issues: [], vendor: 'openai-compatible-asr', seal: false, assessmentReason: assessmentReason || 'not_configured', latencyMs: now() - start };
       }
       return { ok: false, capability: 'unavailable', mode, transcript: '', overall: null, words: [], issues: [], seal: false, fallback: 'browser', reason: assessmentReason, latencyMs: now() - start };
     } finally { active.speech--; }
@@ -226,27 +240,28 @@ export function createServices(config, { fetchImpl = fetch, now = Date.now } = {
     await writeQueue;
     let raw = '';
     try { raw = await fs.readFile(eventPath, 'utf8'); } catch (e) { if (e.code !== 'ENOENT') throw e; }
-    const totals = { sessions: new Set(), finished: new Set(), speechAttempts: 0, hints: 0, events: 0, lessons: {} };
+    const totals = { sessions: new Set(), finished: new Set(), speechAttempts: 0, pronunciationAttempts: 0, hints: 0, events: 0, lessons: {} };
     for (const line of raw.split('\n')) {
       if (!line) continue;
       let e; try { e = JSON.parse(line); } catch { continue; }
       totals.sessions.add(e.sessionId); totals.events++;
       if (e.type === 'session_finish') totals.finished.add(e.sessionId);
       if (e.type === 'speak_attempt' && ['browser_asr', 'cloud_asr'].includes(e.payload?.inputMode) && e.payload?.asrOk === true) totals.speechAttempts++;
+      if (e.type === 'pronunciation_attempt' && e.payload?.capability === 'L2') totals.pronunciationAttempts++;
       if (e.type === 'hint_used') totals.hints++;
       totals.lessons[e.lesson] = (totals.lessons[e.lesson] || 0) + 1;
     }
-    return { ok: true, sessions: totals.sessions.size, completedSessions: totals.finished.size, speechAttempts: totals.speechAttempts, hints: totals.hints, events: totals.events, lessons: totals.lessons, individualRecords: false };
+    return { ok: true, sessions: totals.sessions.size, completedSessions: totals.finished.size, speechAttempts: totals.speechAttempts, pronunciationAttempts: totals.pronunciationAttempts, hints: totals.hints, events: totals.events, lessons: totals.lessons, individualRecords: false };
   }
   return { capabilities, npc, speech, evidence, corpusSearch, event, summary };
 }
 
-function normalizeAssessment(input) {
-  return input.slice(0, 100).map((word) => ({
+function normalizeAssessment(input, reference) {
+  return input.slice(0, 100).filter(word => word && typeof word.w === 'string' && word.w && reference.includes(word.w)).map((word) => ({
     w: String(word.w || '').slice(0, 50), score: score(word.score), start: seconds(word.start), end: seconds(word.end),
-    chars: (Array.isArray(word.chars) ? word.chars : []).slice(0, 50).map((c) => ({
+    chars: (Array.isArray(word.chars) ? word.chars : []).slice(0, 50).filter(c => c && typeof c.c === 'string' && c.c && word.w.includes(c.c)).map((c) => ({
       c: String(c.c || '').slice(0, 2), pinyin: String(c.pinyin || '').slice(0, 30), score: score(c.score),
-      tone: c.tone && Number.isInteger(c.tone.ref) && c.tone.ref >= 0 && c.tone.ref <= 5 && Number.isInteger(c.tone.got) && c.tone.got >= 0 && c.tone.got <= 5 ? { ref: c.tone.ref, got: c.tone.got, ok: c.tone.ref === c.tone.got } : null,
+      tone: c.tone?.valid === true && Number.isInteger(c.tone.ref) && c.tone.ref >= 1 && c.tone.ref <= 4 && Number.isInteger(c.tone.got) && c.tone.got >= 1 && c.tone.got <= 4 ? { valid: true, ref: c.tone.ref, got: c.tone.got, ok: c.tone.ref === c.tone.got } : null,
       phones: (Array.isArray(c.phones) ? c.phones : []).slice(0, 10).map((p) => ({ p: String(p.p || '').slice(0, 15), score: score(p.score) })),
     })),
   }));
@@ -254,13 +269,13 @@ function normalizeAssessment(input) {
 const score = (n) => Number.isFinite(n) && n >= 0 && n <= 100 ? n : null;
 const seconds = (n) => Number.isFinite(n) && n >= 0 && n <= 300 ? n : null;
 export function toneFeedback(words, refText) {
-  const instruction = { 0: '轻轻、短短地读', 1: '平着读，保持音高', 2: '从低往高扬', 3: '先降低，再扬起', 4: '从高往低落', 5: '轻轻、短短地读' };
+  const instruction = { 1: '平着读，保持音高', 2: '从低往高扬', 3: '先把声音压低，连读时跟着整词示范', 4: '从高往低落' };
   return words.flatMap((word) => word.chars.filter((c) => c.tone && !c.tone.ok).map((c) => ({
     type: 'tone', at: c.c, say: `“${c.c}”${c.pinyin ? `（${c.pinyin}）` : ''}要${instruction[c.tone.ref]}。`, drill: [...new Set([c.c, word.w, refText].filter(Boolean))],
   }))).slice(0, 2);
 }
 
-const TYPES = new Set(['session_start', 'station_enter', 'prompt_shown', 'speak_attempt', 'answer', 'hint_used', 'word_card_open', 'evidence_open', 'plug_toggle', 'session_finish']);
+const TYPES = new Set(['session_start', 'station_enter', 'prompt_shown', 'speak_attempt', 'pronunciation_attempt', 'answer', 'hint_used', 'word_card_open', 'evidence_open', 'plug_toggle', 'session_finish']);
 const NUMBERS = new Set(['level', 'score', 'overall', 'attempt', 'spoken', 'hints', 'evidenceCount', 'durationMs', 'duration', 'elapsedMs']);
 const BOOLEANS = new Set(['plugged', 'asrOk', 'ok', 'correct', 'online']);
 const LABELS = new Set(['station', 'step', 'target', 'word', 'evidenceId', 'inputMethod', 'inputMode', 'capability']);

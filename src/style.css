@@ -253,6 +253,29 @@ body.plugged .lbl.plaque .seal { box-shadow: 0 0 18px 6px rgba(255,170,120,.7), 
 .npc-answer { min-height:90px; font:18px/1.8 var(--ll-font); }
 .npc-answer small { color:var(--ll-soft); font:12px var(--ll-sans); }
 .npc-line ruby rt { font:11px var(--ll-sans); }
+.pronunciation .box { width:min(520px,calc(100vw - 24px)); padding:28px; max-height:calc(100dvh - 32px); overflow-y:auto; }
+.practice-eyebrow { color:var(--ll-teal); font:600 12px var(--ll-sans); letter-spacing:.08em; margin-bottom:8px; }
+.practice-reference { font:26px/2.1 var(--ll-font); overflow-wrap:anywhere; margin:10px 0; }
+.practice-reference rt { font:12px var(--ll-sans); }
+.practice-score { display:flex; align-items:baseline; gap:8px; font:14px var(--ll-sans); color:var(--ll-soft); }
+.practice-score b { color:var(--ll-teal); font-size:26px; font-variant-numeric:tabular-nums; }
+.practice-score small { margin-left:auto; font-size:11px; }
+.practice-feedback { border-left:3px solid var(--ll-teal); padding-left:14px; margin:16px 0; }
+.practice-feedback p { margin:12px 0; }.practice-feedback strong,.practice-feedback span,.practice-feedback small { display:block; }
+.practice-feedback span { margin:5px 0; }.practice-feedback small { color:var(--ll-soft); }
+.practice-transcript { overflow-wrap:anywhere; }
+.practice-drills,.practice-actions,.practice-footer { display:flex; flex-wrap:wrap; gap:8px; }
+.pronunciation button:not(.close) { min-height:44px; padding:10px 14px; border-radius:10px; cursor:pointer; font:600 14px var(--ll-sans); border:1px solid #cbc7bb; background:#fffdf7; color:var(--ll-ink); }
+.pronunciation button:focus-visible { outline:3px solid var(--ll-teal); outline-offset:3px; }
+.pronunciation button:disabled { opacity:.48; cursor:wait; }
+.pronunciation .practice-drills button[aria-pressed="true"] { background:#e4efea; color:var(--ll-teal); border-color:var(--ll-teal); }
+.practice-actions { margin-top:16px; }.practice-actions button { flex:1; }
+.pronunciation [data-practice-record],.pronunciation [data-practice-submit] { background:var(--ll-teal); color:white; border-color:var(--ll-teal); }
+.pronunciation [data-practice-record].recording { background:#9e4737; border-color:#9e4737; }
+.practice-status { min-height:1.5em; color:var(--ll-teal); font-size:13px; }
+.practice-note { color:var(--ll-soft); font:12px/1.6 var(--ll-sans); }
+.practice-footer { justify-content:flex-end; border-top:1px solid #ded8ca; padding-top:16px; }
+@media(max-width:480px) { .pronunciation .box { padding:22px 18px; } .pronunciation h2 { font-size:22px; } .practice-score { flex-wrap:wrap; } .practice-score small { margin-left:0; } }
 @media (max-width:760px) { .topbar { flex-wrap:wrap; } .tools { flex-wrap:wrap; justify-content:flex-end; } .topbar .steps { max-width:38vw; } }
 .scene-panel .sl { display: grid; grid-template-columns: 44px 1fr 46px; align-items: center; gap: 6px; font-size: 12px; margin: 4px 0; }
 .scene-panel .sl em { font-style: normal; color: var(--ll-soft); text-align: right; font-variant-numeric: tabular-nums; }

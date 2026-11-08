@@ -200,7 +200,7 @@ test('ASR provider receives audio but no reference-text prompt; result explicitl
 
 test('real tone observations produce bounded executable drills, never corpus seals', async () => {
   const service = createServices(configured({ assessmentUrl: 'https://assess.test/assess', assessmentKey: 'test-only' }), { fetchImpl: async () => new Response(JSON.stringify({
-    ok: true, transcript: '去动电机', overall: 62, vendor: 'test-adapter', words: [{ w: '驱动电机', score: 62, chars: [{ c: '驱', pinyin: 'qū', score: 41, tone: { ref: 1, got: 4, ok: true }, phones: [{ p: 'q', score: 88 }] }] }],
+    ok: true, transcript: '去动电机', transcriptSource: 'recognition', overall: 62, vendor: 'test-adapter', words: [{ w: '驱动电机', score: 62, chars: [{ c: '驱', pinyin: 'qū', score: 41, tone: { valid: true, ref: 1, got: 4, ok: true }, phones: [{ p: 'q', score: 88 }] }] }],
   })) });
   const r = await service.speech(speechForm());
   assert.equal(r.capability, 'L2'); assert.equal(r.words[0].chars[0].tone.ok, false); assert.equal(r.seal, false);
@@ -210,7 +210,38 @@ test('real tone observations produce bounded executable drills, never corpus sea
 test('assessment without explicit tone evidence cannot masquerade as L2 and falls back to ASR', async () => {
   const service = createServices(configured({ assessmentUrl: 'https://assess.test/assess', assessmentKey: 'test-only', asrUrl: 'https://asr.test/transcriptions', asrKey: 'test-only', asrModel: 'mock' }), { fetchImpl: async (url) => new Response(JSON.stringify(url.includes('assess') ? { ok: true, transcript: '驱动电机', overall: 99, words: [] } : { text: '驱动电机' })) });
   const r = await service.speech(speechForm('open'));
-  assert.equal(r.capability, 'L1'); assert.equal(r.overall, null); assert.equal(r.assessmentReason, 'assessment_missing_tone_evidence');
+  assert.equal(r.capability, 'L1'); assert.equal(r.overall, null); assert.equal(r.assessmentReason, 'open_requires_independent_asr');
+});
+
+test('Tencent reference-aligned assessment is never passed off as an ASR transcript', async () => {
+  let calls = 0;
+  const service = createServices(configuration({}), { tencentFactory: () => ({ configured: true, assess: async (input) => {
+    calls++; assert.equal(input.referenceText, '驱动电机'); assert.equal(input.mode, 'read');
+    return { ok: true, overall: 65, transcript: '驱动电机', transcriptSource: 'none', vendor: 'tencent-soe', words: [{ w: '驱动电机', chars: [{ c: '驱', tone: { valid: true, ref: 1, got: 4 } }] }] };
+  } }) });
+  const r = await service.speech(speechForm());
+  assert.equal(r.capability, 'L2'); assert.equal(r.transcript, ''); assert.equal(r.transcriptSource, 'none'); assert.equal(r.seal, false); assert.equal(calls, 1);
+  const open = await service.speech(speechForm('open'));
+  assert.equal(open.ok, false); assert.equal(calls, 1, 'open answers cannot be assessed against a pre-filled reference');
+});
+
+test('untrusted assessment alignment and invalid Tone.Valid cannot create L2; falls back to independent ASR', async () => {
+  for (const words of [
+    [{ w: '驱动电机', chars: [{ c: '驱', tone: { valid: false, ref: 1, got: 4 } }] }],
+    [{ w: '坏数据', chars: [{ c: '坏', tone: { valid: true, ref: 4, got: 1 } }] }],
+    [{ w: '驱动电机', chars: [{ c: '坏', tone: { valid: true, ref: 4, got: 1 } }] }],
+  ]) {
+    const service = createServices(configured({ asrUrl: 'https://asr.test/transcriptions', asrKey: 'test-only', asrModel: 'mock' }), {
+      tencentFactory: () => ({ configured: true, assess: async () => ({ ok: true, overall: 99, words }) }),
+      fetchImpl: async () => new Response(JSON.stringify({ text: '去动电机' })),
+    });
+    const r = await service.speech(speechForm()); assert.equal(r.capability, 'L1'); assert.equal(r.transcript, '去动电机'); assert.equal(r.transcriptSource, 'recognition'); assert.equal(r.overall, null);
+  }
+});
+
+test('speech context validation precedes any provider call', async () => {
+  const service = createServices(configuration({}), { tencentFactory: () => ({ configured: true, assess: () => { throw new Error('must not call'); } }) });
+  const form = speechForm(); form.set('lesson', '../../secret'); await assert.rejects(service.speech(form), /invalid_speech_context/);
 });
 
 test('events whitelist educational fields and discard names, raw transcripts, audio, client timestamps and nested objects', () => {
@@ -226,10 +257,13 @@ test('HTTP static app, status, anonymous event persistence and teacher aggregate
   for (const type of ['session_start', 'speak_attempt', 'hint_used', 'session_finish']) {
     assert.equal((await post(app.url + '/api/learn/event', { sessionId: base.sessionId, lesson: 'nev-l4', type, payload: { station: 'a', name: 'not saved', inputMode: 'cloud_asr', asrOk: true } })).status, 200);
   }
+  assert.equal((await post(app.url + '/api/learn/event', { sessionId: base.sessionId, lesson: 'nev-l4', type: 'pronunciation_attempt', payload: { station: 'a', target: '发动机', capability: 'L2', score: 61, transcript: 'must not persist' } })).status, 200);
   const summary = await (await fetch(app.url + '/api/teacher/summary')).json();
   assert.equal(summary.sessions, 1); assert.equal(summary.completedSessions, 1); assert.equal(summary.speechAttempts, 1); assert.equal(summary.hints, 1);
+  assert.equal(summary.pronunciationAttempts, 1, 'assessment attempts remain separate from recognized speech');
   const raw = await fs.readFile(path.join(app.dir, 'data/learning-events.jsonl'), 'utf8');
   assert.ok(!raw.includes('not saved')); assert.ok(!JSON.stringify(summary).includes(base.sessionId));
+  assert.ok(!raw.includes('must not persist'));
 });
 
 test('HTTP security rejects foreign origin, rebinding host, oversized JSON, nonexistent assets and protected teacher access', async (t) => {

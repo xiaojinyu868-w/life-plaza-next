@@ -33,7 +33,11 @@
 
 ### 2.1 接口挂载与结果边界
 
-对外统一 `POST /api/speech/evaluate`，密钥、签名、厂商地址和重试都在服务器。浏览器只访问自己的服务。请求携带 `mode`、`refText`、匿名 session、课程/站点/步；原始录音在内存内处理，设置大小和时长上限，取消时释放资源。
+对外统一 `POST /api/speech/assess`，密钥、签名、厂商地址和重试都在服务器。浏览器只访问自己的服务。请求携带 `mode`、`refText`、匿名 session、课程/站点/步；原始录音在内存内处理，设置大小和时长上限，取消时释放资源。
+
+腾讯 SOE 已有服务端协议适配器，见 [厂商契约与验证边界](TENCENT-SOE.md)。这表示代码和模拟协议测试已实现，尚未进行真实厂商调用或真人验证。跟读返回的参考句对齐词不能作为独立识别文本；只有 `transcriptSource: recognition` 的结果能由学习者确认后提交答题。有效声调必须有 `tone.valid: true` 及 1–4 的参考/观察值，未知、拒识和轻声字段暂不生成声调诊断。开放作答走独立 ASR，不套用跟读的预设答案。
+
+课堂提供“问题字 → 整词 → 原句”的选择、听示范和重新录音。只识别文字时不显示分数。有效跟读次数与识别到文字的作答次数分开汇总；没有把跟读评分计成语义答对、语料证据或通关。示范声音来自浏览器语音合成，需另验教师认可的发音与变调效果。
 
 - 腾讯服务端 WebSocket：`wss://soe.cloud.tencent.com/soe/api/<appid>`；请求签名按[官方协议](https://cloud.tencent.com/document/product/1774/107497)。中文句子设 `server_engine_type=16k_zh`、`eval_mode=1`，`ref_text` 加 `{::cmd{F_TDET=true}}` 前缀。只有 `Words[].Tone.Valid=true` 且调值有效才映射 `tone.ref/got/ok`；无效、null、-1 均标“未评测”，不能默认正确。中文句子上限 30 字/60 秒，长句需教学拆分。[声调参数](https://cloud.tencent.com/document/product/1774/107396)
 - 讯飞服务端 WebSocket：`wss://ise-api.xfyun.cn/v2/open-ise`，AppID/APIKey/APISecret 签名。按实际中文题型解析 XML；拒识结果不能作为可信分数。`perr_msg` 是错误类别，不是“实际读成第几声”；没有明确识别调值就让 `got=null`，不能从参考拼音倒填。[API 与字段](https://www.xfyun.cn/doc/Ise/IseAPI.html)
