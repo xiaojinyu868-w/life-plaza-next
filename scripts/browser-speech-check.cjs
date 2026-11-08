@@ -62,7 +62,7 @@ const { once } = require('node:events');
       assert.equal(geometry.scrollWidth, geometry.width);
       await page.screenshot({ path: path.join(out, `feedback-${viewport.width}.png`) });
       await page.locator('[data-practice-listen]').click();
-      await page.waitForFunction(() => document.querySelector('[data-practice-status]').textContent.includes('没有可用'));
+      await page.waitForFunction(() => document.querySelector('[data-practice-status]').textContent.includes('没有播放成功'));
       await page.locator('[data-practice-drill="0"]').click();
       await page.locator('[data-practice-record]').click();
       await page.waitForFunction(() => document.querySelector('[data-practice-record]').textContent === '停止并发送');
