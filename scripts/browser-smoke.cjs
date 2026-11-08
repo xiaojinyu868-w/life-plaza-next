@@ -6,7 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const base = process.env.WORKSHOP_TEST_URL || 'http://127.0.0.1:5198';
-const output = path.resolve('artifacts/browser');
+const browserChannel = process.env.PLAYWRIGHT_CHANNEL || 'msedge';
+const output = path.resolve(process.env.WORKSHOP_BROWSER_ARTIFACT_DIR || 'artifacts/browser');
 fs.mkdirSync(output, { recursive: true });
 
 async function completeLesson(browser, lesson, plugged) {
@@ -81,7 +82,32 @@ async function checkOnlineAndMobile(browser) {
   assert.match(answer, /没有发动机/);
   assert.equal(await page.locator('.npc-answer .seal').count(), 0, 'NPC must not forge a corpus seal');
   await page.screenshot({ path: path.join(output, 'mobile-npc.png') });
+  await page.locator('.npc-form input').fill('也放在哪里？');
+  await page.locator('.npc-form button').click();
+  await page.waitForFunction(() => {
+    const copy = document.querySelector('.npc-line')?.cloneNode(true);
+    copy?.querySelectorAll('rt').forEach(rt => rt.remove()); return copy?.textContent.includes('动词');
+  });
+  const vocabulary = await page.locator('.npc-line').evaluate(el => {
+    const copy = el.cloneNode(true); copy.querySelectorAll('rt').forEach(rt => rt.remove());
+    return { zh: copy.textContent, over: [...new Set([...el.querySelectorAll('ruby.ll-new')].map(x => x.dataset.w))], words: [...el.querySelectorAll('ruby')].map(x => x.dataset.w) };
+  });
+  const canonical = await import('../server/canonical.mjs');
+  assert.deepEqual(vocabulary.over, canonical.overLevel(vocabulary.zh, 2, canonical.readLesson('nev-l4')).map(x => x.w));
+  assert.ok(vocabulary.words.includes('前')); assert.ok(!vocabulary.over.includes('前'), 'official level1 word must not become unknown');
+  await page.screenshot({ path: path.join(output, 'mobile-vocabulary.png') });
   await page.locator('.modal [data-x]').click();
+  const cards = [];
+  for (const [word, expected] of [['认', 'HSK 5级词汇'], ['识', 'HSK 6级词汇'], ['电', 'HSK 3 / 5级词汇'], ['燃油', 'HSK 7–9级词汇'], ['句子', 'HSK 3级词汇']]) {
+    await page.evaluate(w => window.__cdg.openWord(w), word);
+    const text = await page.locator('#card').innerText(); assert.ok(text.includes(expected), `${word}: ${expected}`);
+    if (word === '电') assert.match(text, /需结合语境/);
+    if (word === '句子') assert.match(text, /jùzi/);
+    const rect = await page.locator('#card').boundingBox(); assert.ok(rect.x >= 0 && rect.x + rect.width <= 390);
+    cards.push({ word, expected, fitsViewport: true });
+    if (word === '电' || word === '燃油') await page.screenshot({ path: path.join(output, `mobile-card-${word}.png`) });
+    await page.locator('#card [data-close]').click();
+  }
   await page.locator('[data-i="1"]').click(); await page.waitForTimeout(1800);
   const geometry = await page.evaluate(() => {
     const en = document.getElementById('capEn').getBoundingClientRect(), next = document.getElementById('capNext').getBoundingClientRect();
@@ -105,11 +131,11 @@ async function checkOnlineAndMobile(browser) {
   const storageNotice = await teacher.locator('#storage').textContent(); assert.match(storageNotice, /最近 30 天/);
   await teacher.screenshot({ path: path.join(output, 'teacher-summary.png') });
   await teacher.close(); await page.close(); assert.deepEqual(errors, []);
-  return { errors, connectedFallbackAnswer: answer, serviceFailureFallback: fallback, mobileGeometry: geometry, teacherMetrics: metricCount, storageNotice };
+  return { errors, connectedFallbackAnswer: answer, serviceFailureFallback: fallback, mobileGeometry: geometry, teacherMetrics: metricCount, storageNotice, vocabulary, cards };
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge' });
+  const browser = await chromium.launch({ headless: true, channel: browserChannel });
   try {
     const courses = [];
     const cases = [['nev-l5', true], ['nev-l4', false], ['nev-l4', true]];
@@ -118,7 +144,7 @@ async function checkOnlineAndMobile(browser) {
     assert.ok(selectedCases.length || selected === 'integration', 'Unknown WORKSHOP_TEST_CASE');
     for (const [lesson, plugged] of selectedCases) courses.push(await completeLesson(browser, lesson, plugged));
     const integration = !selected || selected === 'integration' ? await checkOnlineAndMobile(browser) : null;
-    const result = { testedAt: new Date().toISOString(), mode: 'real-browser-with-scripted-inputs', realVoiceTested: false, realModelTested: false, courses, integration };
+    const result = { testedAt: new Date().toISOString(), browser: { channel: browserChannel, version: browser.version() }, mode: 'real-browser-with-scripted-inputs', realVoiceTested: false, realModelTested: false, courses, integration };
     fs.writeFileSync(path.join(output, selected ? `report-${selected}.json` : 'report.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }

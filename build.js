@@ -3,7 +3,9 @@ const fs = require('fs'), path = require('path');
 const src = (f) => fs.readFileSync(path.join(__dirname, 'src', f), 'utf8');
 const out = process.argv[2] || path.join(__dirname, 'dist', '插电工坊.html');
 const auto = process.argv[3] ? `window.CDG_AUTOSTATE=${process.argv[3]};\nwindow.addEventListener('error',function(e){document.body.insertAdjacentHTML('beforeend','<pre style="position:fixed;top:40px;left:10px;z-index:9999;background:#fff;color:#c00;font-size:12px;white-space:pre-wrap;max-width:90vw">ERR '+e.message+' @'+e.lineno+':'+e.colno+'</pre>')});window.addEventListener('unhandledrejection',function(e){document.body.insertAdjacentHTML('beforeend','<pre style="position:fixed;top:80px;left:10px;z-index:9999;background:#fff;color:#c00;font-size:12px">REJ '+(e.reason&&e.reason.stack||e.reason)+'</pre>')});\n` : '';
-const files = ['engine.js', 'splat.js', 'data.js', 'hsk.js', 'script.js', 'logic.js', 'world.js', 'net.js', 'speech.js', 'pronunciation.js', 'npc-voice.js', 'voice-output.js', 'npc-timing.js', 'app.js'];
+const files = ['engine.js', 'splat.js', 'data.js', 'hsk.js', 'script.js', 'logic.js', 'lexicon.js', 'world.js', 'net.js', 'speech.js', 'pronunciation.js', 'npc-voice.js', 'voice-output.js', 'npc-timing.js', 'app.js'];
+const vocabulary = JSON.parse(fs.readFileSync(path.join(__dirname, 'content/hsk/vocabulary-2025.json'), 'utf8'));
+require('./src/lexicon.js').create(vocabulary);
 const lessonDir = path.join(__dirname, 'content', 'lessons');
 const lessonRunner = require('./src/lesson.js');
 const lessons = Object.fromEntries(fs.readdirSync(lessonDir).filter(name => /^nev-l\d+\.json$/.test(name)).map(name => {
@@ -12,7 +14,7 @@ const lessons = Object.fromEntries(fs.readdirSync(lessonDir).filter(name => /^ne
   if (name !== lesson.id + '.json') throw new Error('Lesson filename must match id');
   return [lesson.id, lesson];
 }));
-const lessonBoot = `window.CDG_LESSONS=${JSON.stringify(lessons)};
+const lessonBoot = `window.CDG_HSK_VOCAB=${JSON.stringify(vocabulary)};window.CDG_LESSONS=${JSON.stringify(lessons)};
 (function(){
  const requested=new URLSearchParams(location.search).get('lesson');
  const lesson=window.CDG_LESSONS[requested]||window.CDG_LESSONS['nev-l4'];

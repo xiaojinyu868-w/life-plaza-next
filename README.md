@@ -13,6 +13,7 @@
 - 已加入腾讯 SOE 服务端协议适配、声调反馈与再次跟读界面，以及 Marble 空间选点和可逆细节档位。协议/界面使用模拟语音验证；点云已在本机 RTX 4060 的 Edge 中验证，均不替代真人与核显验收。
 - “问师傅”可语音输入并确认后发送，也能切换到小龙。答错时可联机取得当前题的补充讲解；服务端重新检查课程答案，模型不能改判。已有50轮预注册评测工具，默认不请求网络，真实模型质量仍未验收。
 - 慢回复时尝试简短等待语音；关闭、录音和切换对话会取消旧播放。浏览器计时分别记录提示、完整答案和语音开始，未播放成功不会冒称已发声；真实模型速度与实际听感仍待验收。
+- 字幕、词卡和服务端已共用官方2025大纲的完整词汇等级（11,000条记录）。识字等级不再代替词汇等级；多用法词保留全部等级，专业词单列，7–9级合并。词义与语法的教学审阅仍需单独完成。
 - 语音使用前展示配置的供应商、地域与保存规则；匿名事件有可配置的保存期限和容量上限，教师汇总说明统计范围。限流分别按校园共享IP和随机学习会话执行，真实30人语音并发仍需独立验收。
 - 已创建独立私有仓库：[xiaojinyu868-w/life-plaza-next](https://github.com/xiaojinyu868-w/life-plaza-next)。本目录只连接这个新远端。
 
@@ -24,6 +25,7 @@
 | [产品方向](docs/PRODUCT.md) | 两份讨论的结论、首个闭环建议、验收与待定项 |
 | [代码基线](docs/BASELINE.md) | 本机版本、源码与构建产物的区别、迁移顺序 |
 | [数据与接口](docs/DATA-SOURCES.md) | 语料与图谱的接入位置、认证、未知项与来源记录 |
+| [HSK词汇数据](docs/HSK-VOCABULARY.md) | 完整词表、官方等级与第三方释义、语境判级限制 |
 | [录音复核](docs/RECORDING-REVIEW.md) | 404/405 的共识、分歧和未验证说法 |
 | [技术方案](docs/TECHNICAL-PLAN.md) | 模型、语音、成本与部署约束 |
 | [验收表](docs/ACCEPTANCE.md) | 必须分开验证的各项能力 |
@@ -59,11 +61,12 @@ npm run test:layout
 npm run test:flow
 npm run test:flow:unplugged
 npm run test:services
+npm run test:lexicon
 ```
 
 规则和假 DOM 流程测试验证教学逻辑；服务端测试使用隔离目录及假供应商，不调用收费服务。真实浏览器、真实供应商和真人测评分别验收，不能把自动测试结果当成教育效果。
 
-可选浏览器检查：先 `npm ci` 安装开发依赖，在另一个终端保持本机服务运行，再执行 `npm run test:browser`。默认使用已安装的 Edge；生成的报告和截图在 `artifacts/browser/`。脚本使用自动输入，不能替代真人语音与教学审阅。测试服务建议用独立的 `WORKSHOP_DATA_DIR`，以免把测试会话混入正式课堂。
+可选浏览器检查：先 `npm ci` 安装开发依赖，在另一个终端保持本机服务运行，再执行 `npm run test:browser`。默认使用已安装的 Edge；可设 `PLAYWRIGHT_CHANNEL=chrome`，并用 `WORKSHOP_BROWSER_ARTIFACT_DIR` 指定独立输出目录。默认报告和截图在 `artifacts/browser/`。脚本使用自动输入，不能替代真人语音与教学审阅。测试服务建议用独立的 `WORKSHOP_DATA_DIR`，以免把测试会话混入正式课堂。
 
 `npm run test:speech-ui` 自行启动隔离测试服务，检查桌面和手机的跟读、失败、关闭、切题与断网流程；使用合成麦克风和假供应商回复，不上传真人录音。可选 `node scripts/browser-splat-check.cjs <本地500k官方v3样本路径>` 需要提前取得验证样本，不会下载或内嵌素材；报告在 `artifacts/splat-browser/`。
 

@@ -60,13 +60,14 @@
       for (const [k, x] of Object.entries(v)) { if (forbidden.has(k)) fail(p, 'unsafe key'); data(x, `${p}.${k}`, depth + 1); }
     }
     data(lesson, 'root');
-    keys(lesson, ['schemaVersion', 'id', 'title', 'provenance', 'textbook', 'level', 'roles', 'facts', 'vocabulary', 'grammar', 'dict', 'evidence', 'channels', 'cards', 'wordChains', 'hsk', 'assets', 'pools', 'stations'], 'root');
+    keys(lesson, ['schemaVersion', 'id', 'title', 'provenance', 'textbook', 'level', 'roles', 'facts', 'vocabulary', 'professionalWords', 'grammar', 'dict', 'evidence', 'channels', 'cards', 'wordChains', 'hsk', 'assets', 'pools', 'stations'], 'root');
     if (lesson.schemaVersion !== 1) fail('schemaVersion', 'expected 1');
     identifier(lesson.id, 'id'); str(lesson.title, 'title');
     if (!obj(lesson.provenance) || !['textbook-adaptation', 'authored-pending-review'].includes(lesson.provenance.kind)) fail('provenance', 'explicit source kind required');
     str(lesson.provenance.note, 'provenance.note');
     if (!obj(lesson.level) || !Array.isArray(lesson.level.range) || lesson.level.range.length !== 2 || !lesson.level.range.every(Number.isInteger) || lesson.level.range[0] < 1 || lesson.level.range[1] > 9 || lesson.level.range[0] > lesson.level.range[1] || !Number.isInteger(lesson.level.default) || lesson.level.default < lesson.level.range[0] || lesson.level.default > lesson.level.range[1]) fail('level', 'invalid level range/default');
     for (const k of ['dict', 'evidence', 'cards', 'pools']) if (!obj(lesson[k])) fail(k, 'object required');
+    if (lesson.professionalWords !== undefined && (!Array.isArray(lesson.professionalWords) || lesson.professionalWords.length > 200 || new Set(lesson.professionalWords).size !== lesson.professionalWords.length || !lesson.professionalWords.every(w => typeof w === 'string' && w.length > 0 && w.length <= 80 && own(lesson.dict, w)))) fail('professionalWords', 'unique course dictionary terms required (max 200)');
     for (const [id, e] of Object.entries(lesson.evidence)) {
       if (!obj(e) || !Number.isInteger(e.ch) || e.ch < 0 || e.ch > 4 || !(e.hits === null || Number.isInteger(e.hits) && e.hits >= 0)) fail(`evidence.${id}`, 'channel/hits required (null for grouped counts)');
       for (const k of ['q', 'at', 'src']) str(e[k], `evidence.${id}.${k}`);

@@ -6,13 +6,15 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Reuse the exact browser dictionaries, fact table and teaching scripts. No second fact table.
 const scope = vm.createContext({});
-for (const file of ['data.js', 'hsk.js', 'logic.js', 'script.js', 'lesson.js']) {
+for (const file of ['data.js', 'hsk.js', 'logic.js', 'script.js', 'lesson.js', 'lexicon.js']) {
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'src', file), 'utf8'), scope, { filename: file, timeout: 1000 });
 }
 export const DATA = scope.CDG_DATA;
 export const HSK = scope.CDG_HSK;
 export const LOGIC = scope.CDG_LOGIC;
 export const SCRIPT = scope.CDG_SCRIPT;
+export const LEXICON = scope.CDG_LEXICON.create(JSON.parse(fs.readFileSync(path.join(ROOT, 'content/hsk/vocabulary-2025.json'), 'utf8')));
+const defaultLesson = JSON.parse(fs.readFileSync(path.join(ROOT, 'content/lessons/nev-l4.json'), 'utf8'));
 export const SESSION_RE = /^s_[a-zA-Z0-9_-]{12,80}$/;
 export const STATIONS = new Set(['intro', 'a', 'b', 'c', 'd', 'end']);
 const CONTENT_ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -60,24 +62,15 @@ export function lessonExists(id) {
 export function overLevel(text, level, content) {
   if (level === 0) return [];
   const result = new Map();
-  // Preserve lesson-authored professional terms as one token, without assigning them an HSK grade.
-  const extra = Object.keys(content?.dict || {}).filter((w) => !Object.hasOwn(DATA.DICT, w)).sort((a, b) => b.length - a.length);
-  const tokens = [];
-  let rest = String(text || '');
-  while (rest) {
-    const next = extra.map((word) => ({ word, at: rest.indexOf(word) })).filter((x) => x.at >= 0).sort((a, b) => a.at - b.at || b.word.length - a.word.length)[0];
-    if (!next) { tokens.push(...LOGIC.segment(rest)); break; }
-    tokens.push(...LOGIC.segment(rest.slice(0, next.at)));
-    const [, en, tag] = content.dict[next.word];
-    tokens.push({ t: next.word, zh: true, en, tag });
-    rest = rest.slice(next.at + next.word.length);
-  }
+  const lesson = content || defaultLesson;
+  const tokens = LEXICON.inspect(String(text || ''), level, { dictionary: lesson.dict, professionalWords: lesson.professionalWords || [] });
   for (const token of tokens) {
-    if (!token.zh) continue;
-    const entry = HSK.w[token.t];
-    if (!entry || entry[0] > level) result.set(token.t, {
-      w: token.t, hsk: entry?.[0] ?? null,
-      en: token.en || entry?.[2] || SCRIPT.dialogueGloss?.[token.t] || '', professional: !entry && ['n', 'r', 'x'].includes(token.tag),
+    if (!token.over) continue;
+    const entry = token.entry;
+    result.set(token.t, {
+      w: token.t, hsk: entry?.bands.length === 1 && entry.band !== '7-9' ? Number(entry.band) : null,
+      bands: entry ? Array.from(entry.bands) : [], ambiguous: entry?.ambiguous || false,
+      en: token.en || SCRIPT.dialogueGloss?.[token.t] || '', professional: token.professional,
     });
   }
   return [...result.values()];
@@ -193,14 +186,17 @@ export function renderLookup(lookup, turn) {
   if (lookup.kind === 'word') {
     const word = lookup.word;
     const dictionary = turn.content?.dict || DATA.DICT;
-    if (typeof word !== 'string' || !Object.hasOwn(dictionary, word) || !question.includes(word)) return null;
-    const [pinyin, meaning, , source] = dictionary[word];
+    if (typeof word !== 'string' || !question.includes(word)) return null;
+    const entry = LEXICON.entry(word), local = Object.hasOwn(dictionary, word) ? dictionary[word] : null;
+    if (!local && !entry) return null;
+    const [pinyin, meaning, , source] = local || [entry.readings.join(' / '), entry.meanings.join('; '), '', 'Gushi auxiliary readings / meanings; not sense-disambiguated'];
     const field = lookup.field || 'meaning';
     if (!['meaning', 'pinyin', 'level'].includes(field)) return null;
-    const entry = HSK.w[word];
+    const requested = inferLookup(turn);
+    if (requested?.kind === 'word' && (requested.word !== word || requested.field !== field)) return null;
     const zh = field === 'pinyin' ? `${word}：${pinyin}。` : field === 'level' ? `${word}。` : `${word}：${meaning}。`;
-    const en = field === 'level' ? entry ? `HSK ${entry[0]}. ${meaning}.` : `No level assigned in the bundled HSK subset. ${meaning}. Learn this lesson word in context.` : `${pinyin} — ${meaning}`;
-    return reply(zh, en, { kind: 'dictionary', word, field, hsk: entry?.[0] ?? null, sourceRef: `content/lessons/${turn.lesson}.json#dict.${word}`, note: source || '', provenance: turn.content?.provenance?.kind || 'bundled' });
+    const en = field === 'level' ? entry ? `HSK ${entry.bands.join(' / ')}${entry.ambiguous ? ' (different uses; context requires review)' : ''}. ${meaning}.` : `Not listed as a word in the 2025 HSK vocabulary syllabus. ${meaning}. Learn this lesson word in context.` : `${pinyin} — ${meaning}`;
+    return reply(zh, en, { kind: 'dictionary', word, field, bands: entry ? Array.from(entry.bands) : [], ambiguous: entry?.ambiguous || false, levelSource: 'content/hsk/vocabulary-2025.json', sourceRef: local ? `content/lessons/${turn.lesson}.json#dict.${word}` : `content/hsk/vocabulary-2025.json#${word}`, note: source || '', provenance: local ? turn.content?.provenance?.kind || 'bundled' : 'third-party-dictionary' });
   }
   if (lookup.kind === 'grammar') {
     if (!Object.hasOwn(GRAMMAR, lookup.point)) return null;
@@ -228,9 +224,9 @@ export function renderLookup(lookup, turn) {
   if (lookup.kind === 'chain') {
     const character = lookup.character;
     if (typeof character !== 'string' || [...character].length !== 1 || !question.includes(character) || !Object.hasOwn(HSK.chain, character)) return null;
-    const candidate = HSK.chain[character].find(([word, level]) => level <= Math.max(1, turn.level) && fits(word + '。', turn));
+    const candidate = HSK.chain[character].find(([word]) => (turn.level === 0 || LEXICON.entry(word)?.maxLevel <= turn.level) && fits(word + '。', turn));
     if (!candidate) return null;
-    return reply(candidate[0] + '。', `${candidate[2]} — ${candidate[3]}. It shares a written character; this is not a prerequisite claim.`, { kind: 'hsk-chain', sourceRef: `HSK.chain.${character}`, word: candidate[0], hsk: candidate[1] });
+    return reply(candidate[0] + '。', `${candidate[2]} — ${candidate[3]}. It shares a written character; this is not a prerequisite claim.`, { kind: 'hsk-chain', sourceRef: `HSK.chain.${character}`, word: candidate[0], bands: Array.from(LEXICON.entry(candidate[0]).bands), levelSource: 'content/hsk/vocabulary-2025.json' });
   }
   if (lookup.kind === 'collocation') {
     const word = lookup.word;
@@ -277,9 +273,16 @@ export function inferLookup(turn) {
   // “给也一个例句” requests 也, not the longer dictionary entry 一个.
   const quoted = [...turn.userText.matchAll(/[“「『"']([^”」』"']+)[”」』"']/g)].map((m) => m[1]);
   const dictionary = turn.content?.dict || DATA.DICT;
+  const knownWord = w => typeof w === 'string' && (Object.hasOwn(dictionary, w) || Boolean(LEXICON.entry(w)));
+  // Explicit metalinguistic questions name one word. Do not let scaffolding such
+  // as the copula 是 become the lookup target when the actual word is absent.
+  const direct = q.match(/^(?:请问|请告诉我|我想知道)?([\p{Script=Han}]{1,40}?)(?:是(?:HSK)?几级|是(?:什么|哪个)等级|的?(?:HSK)?等级|的?HSK几级|几级|怎么读|的?拼音|的?读音|的?英文|是什么意思|什么意思|是什么词|怎么说)/iu)?.[1]
+    || q.match(/^(?:什么是|什么叫)([\p{Script=Han}]{1,40})[？?。.!！]*$/u)?.[1];
+  const explicit = quoted.find(knownWord) || (knownWord(direct) ? direct : null);
+  if (direct && !explicit) return null;
   const targetText = q.replace(/给|一个|例句|造句|举例|搭配|词组|后面|还有什么|什么意思|英文|意思|怎么说|怎么读|拼音|读音|如何读|几级|等级|HSK/gi, ' ');
   const keys = turn.content ? Object.keys(dictionary).sort((a, b) => b.length - a.length) : wordKeys;
-  const word = quoted.find((w) => Object.hasOwn(dictionary, w)) || keys.find((w) => targetText.includes(w));
+  const word = explicit || keys.find((w) => targetText.includes(w));
   if (word) {
     if (/搭配|词组|后面.*词/.test(q)) return { kind: 'collocation', word };
     if (/例句|造句|举例/.test(q)) return { kind: 'example', word };
@@ -309,7 +312,7 @@ export function fallbackTurn(turn, reason = 'not_configured') {
   if (!line) line = turn.role === 'dragon' ? SCRIPT.dWhy : SCRIPT.cAsk;
   if (turn.lesson !== 'nev-l4') line = { zh: turn.role === 'dragon' ? '请师傅教我。' : '我们一起看这个词。', en: 'Let us return to the words in this lesson.' };
   // Short recovery prompts fit all levels; full scripted teaching continues in the local state machine.
-  if ([...line.zh.replace(/[^\p{Script=Han}]/gu, '')].length > turn.maxChars) line = { zh: turn.role === 'dragon' ? '请师傅教我。' : '我们一起看这辆车。', en: 'Let us return to the lesson together.' };
+  if (!fits(line.zh, turn)) line = { zh: turn.role === 'dragon' ? '请师傅教我。' : '我们一起看。', en: 'Let us return to the lesson together.' };
   return { ok: true, source: 'script', intent, zh: line.zh, en: line.en || '', teacher: turn.level === 0 ? line.teacher || '' : '', overLevel: overLevel(line.zh, turn.level, turn.content), evidence: [], seal: false, fallbackReason: reason };
 }
 

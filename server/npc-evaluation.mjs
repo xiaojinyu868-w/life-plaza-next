@@ -119,7 +119,7 @@ function finalOutput(result, redact) {
   return { ok: result?.ok === true, source: ['llm', 'script'].includes(result?.source) ? result.source : 'error', intent: code(result?.intent),
     zh: redact(result?.zh, 1000).text || '', en: redact(result?.en, 1000).text || '', teacher: redact(result?.teacher, 1000).text || '', seal: result?.seal === true,
     evidence: Array.isArray(result?.evidence) ? result.evidence.filter((id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,80}$/.test(id)).slice(0, 30) : [],
-    overLevel: Array.isArray(result?.overLevel) ? result.overLevel.slice(0, 100).map((x) => ({ w: redact(x.w, 80).text, hsk: Number.isInteger(x.hsk) ? x.hsk : null, professional: x.professional === true })) : [],
+    overLevel: Array.isArray(result?.overLevel) ? result.overLevel.slice(0, 100).map((x) => ({ w: redact(x.w, 80).text, hsk: Number.isInteger(x.hsk) ? x.hsk : null, bands: Array.isArray(x.bands) ? x.bands.filter(b => ['1', '2', '3', '4', '5', '6', '7-9'].includes(b)) : [], ambiguous: x.ambiguous === true, professional: x.professional === true })) : [],
     fallbackReason: code(redact(result?.fallbackReason, 100).text), error: code(redact(result?.error, 100).text) };
 }
 function checks(body, final) {
@@ -141,7 +141,7 @@ export async function runEvaluation({ dataset, plan = createPlan(dataset), mode 
   const verifiedPlan = verifyPlan(dataset, { plan, planHash: sha256(stableJson(plan)) });
   const redact = redactor([config?.llmKey, config?.llmUrl]);
   if ([config?.llmKey, config?.llmUrl].some((secret) => typeof secret === 'string' && secret.length >= 4 && stableJson(verifiedPlan).includes(secret))) fail('sensitive_plan_value');
-  const sourceFiles = ['server/npc-evaluation.mjs', 'server/services.mjs', 'server/canonical.mjs', 'src/data.js', 'src/hsk.js', 'src/logic.js', 'src/script.js', 'src/lesson.js', 'content/lessons/nev-l4.json', 'content/lessons/nev-l5.json'];
+  const sourceFiles = ['server/npc-evaluation.mjs', 'server/services.mjs', 'server/canonical.mjs', 'src/data.js', 'src/hsk.js', 'src/lexicon.js', 'content/hsk/vocabulary-2025.json', 'src/logic.js', 'src/script.js', 'src/lesson.js', 'content/lessons/nev-l4.json', 'content/lessons/nev-l5.json'];
   const sourceHashes = Object.fromEntries(await Promise.all(sourceFiles.map(async (file) => [file, sha256(await fs.readFile(path.join(ROOT, file)))])));
   const manifest = { schemaVersion: 1, runId, mode, createdAt: new Date(now()).toISOString(), plan: verifiedPlan, planHash: sha256(stableJson(verifiedPlan)),
     model: mode === 'live' ? redact(String(config.llmModel), 160).text : mode === 'mock' ? 'injected-test-double' : null,

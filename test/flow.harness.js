@@ -62,7 +62,8 @@ const answers = mode === 'plugged' ? [
 G.CDG_AUTOSTATE = { level: 2, station: 0, fast: true, gap: 5, answers: [...answers] };
 const dir = path.join(__dirname, '../src');
 G.CDG_CURRENT_LESSON = JSON.parse(fs.readFileSync(path.join(__dirname, '../content/lessons/nev-l4.json'), 'utf8'));
-for (const f of ['engine.js', 'splat.js', 'data.js', 'hsk.js', 'script.js', 'logic.js', 'world.js', 'lesson.js', 'voice-output.js', 'npc-timing.js', 'app.js']) vm.runInThisContext(fs.readFileSync(path.join(dir, f), 'utf8'), { filename: f });
+G.CDG_HSK_VOCAB = JSON.parse(fs.readFileSync(path.join(__dirname, '../content/hsk/vocabulary-2025.json'), 'utf8'));
+for (const f of ['engine.js', 'splat.js', 'data.js', 'hsk.js', 'script.js', 'logic.js', 'lexicon.js', 'world.js', 'lesson.js', 'voice-output.js', 'npc-timing.js', 'app.js']) vm.runInThisContext(fs.readFileSync(path.join(dir, f), 'utf8'), { filename: f });
 const t0 = Date.now(); const seen = [];
 const timer = setInterval(() => {
   const st = G.__cdg && G.__cdg.ST;

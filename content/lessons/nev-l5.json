@@ -44,6 +44,7 @@
       "elec": 0
     }
   },
+  "professionalWords": ["制动", "动能", "能量回收", "驱动电机", "电能", "电池", "主语", "动词"],
   "vocabulary": [
     "制动",
     "动能",
@@ -53,6 +54,11 @@
     "把……转化成……"
   ],
   "dict": {
+    "主语": ["zhǔyǔ", "subject of a sentence", "t"],
+    "动词": ["dòngcí", "verb", "t"],
+    "王明": ["Wáng Míng", "Wang Ming", "m", "本课角色"],
+    "马丁": ["Mǎdīng", "Martin", "m", "本课角色"],
+    "小龙": ["Xiǎolóng", "Little Dragon", "m", "本课角色"],
     "制动": [
       "zhìdòng",
       "braking",

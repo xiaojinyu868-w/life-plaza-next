@@ -32,11 +32,12 @@ async function httpApp(t, opts = {}) {
 }
 const post = (url, data, headers = {}) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(data) });
 
-test('no provider configuration never calls a remote service; original script fallback remains available', async () => {
+test('no provider configuration never calls a remote service; bounded script fallback remains available', async () => {
   const service = createServices(configuration({}), { fetchImpl: () => { throw new Error('must not call'); } });
   assert.equal(service.capabilities().npc, false);
   const r = await service.npc(base);
-  assert.equal(r.source, 'script'); assert.equal(r.seal, false); assert.equal(r.zh, '为什么叫混合动力汽车？');
+  assert.equal(r.source, 'script'); assert.equal(r.seal, false); assert.equal(r.zh, '请师傅教我。');
+  assert.ok(r.overLevel.length <= 2);
 });
 test('coaching recomputes the answer using the trusted lesson and changes the second hint', async () => {
   const body = { ...base, station: 'a', step: 'recog-engine', purpose: 'feedback', userText: '电池', correct: true, answer: '电池', attempt: 1 };
@@ -418,7 +419,7 @@ test('lesson 5 dictionary terms stay professional, ungraded and explicitly pendi
   const result = await createServices(configuration({})).npc(request);
   assert.equal(result.intent, 'answer'); assert.match(result.zh, /energy recovery/);
   assert.equal(result.grounding.provenance, 'authored-pending-review');
-  assert.deepEqual(result.overLevel, [{ w: '能量回收', hsk: null, en: 'energy recovery', professional: true }]);
+  assert.deepEqual(result.overLevel, [{ w: '能量回收', hsk: null, bands: [], ambiguous: false, en: 'energy recovery', professional: true }]);
   assert.equal(result.evidence.length, 0); assert.equal(result.seal, false);
   const goal = await createServices(configuration({})).npc({ ...request, userText: '今天学什么？' });
   assert.match(goal.zh, /制动/); assert.ok(!goal.zh.includes('对吗'));

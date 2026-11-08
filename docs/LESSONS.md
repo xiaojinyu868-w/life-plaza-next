@@ -25,7 +25,9 @@
 
 ## 浏览器与 Node 接口
 
-按顺序加载数据、`logic.js`、`lesson.js`。浏览器全局为 `CDG_LESSON`，Node 可 `require('./src/lesson.js')`。把课程词典安装到应用的字幕/词卡层应在加载 `logic.js` 前进行，因为现有分词器初始化时计算词典最大词长。运行器自己的 `word` 检查也读取课程词典，支持新增生词的拼音。
+按顺序加载数据、`logic.js`、`lesson.js`。浏览器全局为 `CDG_LESSON`，Node 可 `require('./src/lesson.js')`。课程词典在加载 `logic.js` 前安装；判题的 `word` 检查读取课程词典，支持新增生词的拼音。字幕、词卡和服务端等级判断另用共享 `lexicon.js` 与完整2025词汇表，不再借识字表判词汇等级。
+
+可选 `professionalWords` 是显式的场景专业词数组，最多200项，每项必须是 `dict` 已有词，不能重复。分词优先保留这些整词，但它们仍会按词汇表显示等级或“未收录”，不会因专业词身份获得超纲豁免。`vocabulary` 是本课目标词，包含普通词和语法，因此不能直接等同专业词名单。未设置此字段的旧课程仍可读取；新增课程应明确列出其必要专业词。
 
 ```js
 const result = await CDG_LESSON.run(lesson, adapter, {

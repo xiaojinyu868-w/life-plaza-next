@@ -10,6 +10,14 @@ const H = require('../src/hsk.js');
 const l4 = require('../content/lessons/nev-l4.json');
 const l5 = require('../content/lessons/nev-l5.json');
 const copy = x => JSON.parse(JSON.stringify(x));
+test('professional terms are an explicit optional course list, with no invented dictionary entries', () => {
+  assert.equal(R.validate(l4).ok, true); assert.equal(R.validate(l5).ok, true);
+  assert.ok(l4.professionalWords.includes('驱动电机')); assert.ok(l5.professionalWords.includes('能量回收'));
+  for (const bad of [['不存在的课内词'], ['驱动电机', '驱动电机'], '驱动电机']) {
+    const lesson = copy(l4); lesson.professionalWords = bad; assert.throws(() => R.validate(lesson), /professionalWords/);
+  }
+  const previous = copy(l4); delete previous.professionalWords; assert.equal(R.validate(previous).ok, true);
+});
 test('read-only prompt inspection uses real lesson checks and cannot cross stations or execute actions', () => {
   const before = JSON.stringify(l4);
   const wrong = R.inspectPrompt(l4, { station: 'a', step: 'recog-engine', input: '动力电池' });
@@ -39,7 +47,9 @@ async function play(lesson, opts = {}) {
   return { events, results, asks, result, failures };
 }
 test('complete L4 package retains dictionary, all 40 source records, cards, HSK and six stations', () => {
-  assert.deepEqual(l4.dict, D.DICT); assert.deepEqual(l4.evidence, D.EV); assert.deepEqual(l4.cards, D.CARD); assert.deepEqual(l4.hsk, H);
+  for (const [word, entry] of Object.entries(D.DICT)) assert.deepEqual(l4.dict[word], entry);
+  assert.equal(l4.dict['主语'][1], 'subject of a sentence'); assert.equal(l4.dict['动词'][1], 'verb');
+  assert.deepEqual(l4.evidence, D.EV); assert.deepEqual(l4.cards, D.CARD); assert.deepEqual(l4.hsk, H);
   assert.deepEqual(l4.stations.map(s => s.id), ['intro','a','b','d','c','end']);
   assert.equal(l4.pools.recognize.length, S.aRecog.length); assert.equal(l4.pools.discriminate.length, S.aChoose.length); assert.equal(l4.pools.nameParts.length, S.aSay.length);
   assert.equal(l4.pools.yeSockets.length, 4); assert.equal(l4.pools.confirmWarm.length, 2); assert.equal(l4.pools.confirmFacts.length, 4); assert.equal(l4.pools.questionTags.length, 4); assert.equal(l4.pools.openQuestions.length, 2);

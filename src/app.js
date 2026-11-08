@@ -12,6 +12,9 @@
   const ST = { level: 2, plugged: false, compare: false, teacher: false, py: true, en: true, sound: true, spoken: 0, responses: 0, selfReported: 0, hints: 0, ev: new Set(), station: null, done: new Set(), focus: 'phev', everPlugged: false };
   const AUTO = window.CDG_AUTOSTATE || null; // 测试用：直接跳到某一步
   const LESSON = window.CDG_CURRENT_LESSON;
+  const LEXICON = window.CDG_LEXICON.create(window.CDG_HSK_VOCAB);
+  const lexiconOptions = { dictionary: LESSON?.dict || D.DICT, professionalWords: LESSON?.professionalWords || [] };
+  const wordTokens = (text) => LEXICON.inspect(text, ST.teacher ? 0 : ST.level, lexiconOptions);
   const NET = window.CDG_NET ? window.CDG_NET.createClient() : null;
   let capabilities = {}, privacy = {}, conversationOpen = false, currentStep = '', cloudRecording = null, micBusy = false, micConsent = false;
   let speechDialog = null, npcDialog = null, micEpoch = 0;
@@ -524,23 +527,21 @@
   }
 
   // =========================================================== 字幕
-  const hskLv = (w) => (H.w[w] ? H.w[w][0] : null);
   function tokClass(t) {
-    const lv = hskLv(t.t);
     // Professional vocabulary is still above the selected general-language level.
     // A lesson tag must never hide that distinction.
-    if (!lv || lv > ST.level) return 'll-new';
+    if (t.over) return 'll-new';
     if (t.tag === 'm') return 'll-name';
     if (t.tag === 'g') return 'll-gram';
     if (['n', 'r', 'x'].includes(t.tag)) return 'll-lesson';
     return '';
   }
   function ruby(zh) {
-    return L.segment(zh).map((t) => t.zh ? `<ruby class="${tokClass(t)}" data-w="${esc(t.t)}" title="${esc(t.en || S.dialogueGloss?.[t.t] || '')}">${esc(t.t)}<rt>${esc(t.py || S.dialoguePinyin?.[t.t] || '')}</rt></ruby>` : `<span class="ll-plain">${esc(t.t)}</span>`).join('');
+    return wordTokens(zh).map((t) => t.zh ? `<ruby class="${tokClass(t)}" data-w="${esc(t.t)}" title="${esc(t.en || S.dialogueGloss?.[t.t] || '')}">${esc(t.t)}<rt>${esc(t.py || S.dialoguePinyin?.[t.t] || '')}</rt></ruby>` : `<span class="ll-plain">${esc(t.t)}</span>`).join('');
   }
   function gloss(zh) {
     const words = new Map();
-    for (const t of L.segment(zh)) if (t.zh && tokClass(t) === 'll-new') words.set(t.t, t.en || S.dialogueGloss?.[t.t] || 'meaning not yet checked');
+    for (const t of wordTokens(zh)) if (t.zh && t.over) words.set(t.t, t.en || S.dialogueGloss?.[t.t] || 'meaning not yet checked');
     return [...words].map(([w, en]) => `<span>${esc(w)} · ${esc(en)}</span>`).join('');
   }
   const WHO = { wang: '王明 · 师傅', dragon: '小龙 · 学徒', you: '你 · 马丁' };
@@ -688,12 +689,12 @@
 
   // =========================================================== 词卡
   let cardWord = '';
-  const TAGNAME = { n: '生词', r: '复习词', x: '课本词', g: '语法点' };
+  const TAGNAME = { n: '生词', r: '复习词', x: '课本词', g: '语法点', t: '教学用语' };
   function chainFor(w) {
     const seen = new Set([w]), out = [];
     const OK = new Set(['电', '机', '车', '油']);
     for (const ch of w) if ([...w].length === 1 || OK.has(ch)) for (const c of H.chain[ch] || []) if (!seen.has(c[0])) { seen.add(c[0]); out.push(c); }
-    return out.sort((a, b) => a[1] - b[1]).slice(0, 6);
+    return out.sort((a, b) => (LEXICON.entry(a[0])?.maxLevel || 99) - (LEXICON.entry(b[0])?.maxLevel || 99)).slice(0, 6);
   }
   const sealH = (ev) => (ev ? `<span class="seal sm" data-ev="${ev}" title="看出处">语</span>` : '');
   function evSrc(ev) { const e = D.EV[ev]; return e ? `${D.CH[e.ch]} · ${e.src}` : ''; }
@@ -702,24 +703,25 @@
     track('word_card_open', { word: w });
     cardWord = w;
     let card = $('card'); if (!card) { card = document.createElement('div'); card.id = 'card'; card.className = 'll-card'; document.body.append(card); card.addEventListener('click', onCardClick); }
-    const d = D.DICT[w] || null, hk = H.w[w] || null; let c = D.CARD[w]; if (c && c.alias) c = D.CARD[c.alias];
-    const lesson = d && ['n', 'r', 'x', 'g'].includes(d[2]);
-    const lv = hk ? hk[0] : null;
+    const d = lexiconOptions.dictionary[w] || null, entry = LEXICON.entry(w), legacy = H.w[w] || null; let c = D.CARD[w]; if (c && c.alias) c = D.CARD[c.alias];
+    const lesson = d && ['n', 'r', 'x', 'g', 't'].includes(d[2]);
+    const above = !ST.teacher && (!entry || entry.maxLevel > ST.level);
     let badges = '';
     if (lesson) badges += `<span class="ll-badge lesson">本课${TAGNAME[d[2]]}</span>`;
-    if (lv) badges += `<span class="ll-badge${lv > ST.level ? ' ll-up' : ''}">HSK ${lv}${lv > ST.level ? ' · new' : ''}</span>`;
-    else if (lesson) badges += '<span class="ll-badge ll-up">本地等级表未收录</span>';
-    else if (d && d[2] === 'o') badges += '<span class="ll-badge ll-up">超纲 · beyond</span>';
-    const py = (d && d[0]) || (hk && hk[1]) || '', mean = (d && d[1]) || (hk && hk[2]) || '';
+    if (lexiconOptions.professionalWords.includes(w)) badges += '<span class="ll-badge lesson">课程专业词</span>';
+    if (entry) badges += `<span class="ll-badge${above ? ' ll-up' : ''}">${esc(entry.label)}</span>`;
+    else badges += '<span class="ll-badge ll-up">HSK 词汇表未收录</span>';
+    const py = (d && d[0]) || entry?.readings.join(' / ') || S.dialoguePinyin?.[w] || '', mean = (d && d[1]) || entry?.meanings.join('; ') || S.dialogueGloss?.[w] || '';
     const tb = c && c.tb;
     let h = `<div class="ll-card-head"><div><div class="ll-card-hz">${esc(w)}${badges}</div><div class="ll-card-py">${esc(py)} <button type="button" class="ll-mini" data-say="${esc(w)}" style="border:1px solid rgba(58,46,40,.16);background:#fff;border-radius:99px;padding:2px 8px;cursor:pointer">🔊</button></div></div><button type="button" class="ll-card-close" data-close="1" aria-label="Close">×</button></div>
       <p class="ll-card-mean" lang="en">${esc(mean)}</p>`;
-    if (lesson && (!lv || lv > ST.level)) h += `<div class="ll-sec" style="border:0;padding-top:0;margin-top:8px"><div class="lock" style="border-style:solid;border-color:rgba(178,58,46,.25);background:rgba(178,58,46,.05);color:#6b2a22">本课目标词：${lv ? `HSK 3.0 是 ${lv} 级` : '当前本地等级表未收录'}。当前目标为 HSK ${ST.level}，课堂提供拼音、英语与动作支持；这不代表全文严格符合该等级。</div></div>`;
+    if (lesson && above) h += `<div class="ll-sec" style="border:0;padding-top:0;margin-top:8px"><div class="lock" style="border-style:solid;border-color:rgba(178,58,46,.25);background:rgba(178,58,46,.05);color:#6b2a22">本课目标词：${entry ? esc(entry.label) : 'HSK 词汇表未收录'}。当前目标为 HSK ${ST.level}，课堂提供拼音、英语与动作支持；这不代表全文严格符合该等级。</div></div>`;
+    if (entry?.ambiguous) h += '<div class="pending">同一词形有不同等级的用法。尚未逐句判定词义，当前按最高可能等级提示；拼音与英文列出可能项，不能代替本句解释。</div>';
     if (c?.authored) h += `<div class="ll-sec"><h4>${esc(c.authored.label || '自编样例，待教师审阅')}</h4><div class="ll-ex-zh">${esc(c.authored.ex)}</div></div>`;
     if (tb || (d && d[3] && !c?.authored && LESSON?.textbook)) h += `<div class="ll-sec"><h4>课本 · Textbook</h4>${tb ? `<div class="ll-ex-zh">${esc(tb.ex)} <button type="button" class="ll-mini" data-say="${esc(tb.ex)}" style="border:0;background:transparent;cursor:pointer">🔊</button></div><div class="ll-ex-py">${esc(L.pinyinOf(tb.ex))}</div><div class="ll-ex-en">${esc(tb.exEn)}</div>` : ''}<div class="ll-ex-en" style="margin-top:4px">${esc((tb && tb.page) || ('课本 ' + d[3]))}</div></div>`;
-    if (hk && hk[3]) h += `<div class="ll-sec"><h4>Example · 例句（HSK 3.0）</h4><div class="ll-ex-zh">${esc(hk[3])}</div><div class="ll-ex-py">${esc(hk[4])}</div><div class="ll-ex-en">${esc(hk[5])}</div></div>`;
+    if (legacy && legacy[3]) h += `<div class="ll-sec"><h4>Example · 补充例句（第三方资料）</h4><div class="ll-ex-zh">${esc(legacy[3])}</div><div class="ll-ex-py">${esc(legacy[4])}</div><div class="ll-ex-en">${esc(legacy[5])}</div></div>`;
     const ch = chainFor(w);
-    if (ch.length) h += `<div class="ll-sec"><h4>共字拓展 · 不代表词源或先修关系</h4><div class="ll-chips">${ch.map((x) => `<button type="button" class="ll-chip" data-word="${esc(x[0])}" style="cursor:pointer"><b>${esc(x[0])}</b><em>HSK ${x[1]}</em><small>${esc(x[2])} · ${esc(x[3])}</small></button>`).join('')}</div></div>`;
+    if (ch.length) h += `<div class="ll-sec"><h4>共字拓展 · 不代表词源或先修关系</h4><div class="ll-chips">${ch.map((x) => `<button type="button" class="ll-chip" data-word="${esc(x[0])}" style="cursor:pointer"><b>${esc(x[0])}</b><em>${esc(LEXICON.entry(x[0])?.label || 'HSK 词汇表未收录')}</em><small>${esc(x[2])} · ${esc(x[3])}</small></button>`).join('')}</div></div>`;
     // 四栏
     if (!ST.plugged) {
       h += `<div class="ll-sec"><h4>语料 · 常见搭配 · 常见偏误 · 易混词</h4><div class="lock">🔌 <b>还没插电。</b>插上车间里的语料库充电枪，这里显示：教材和视频里的真实例句、搭配出现的次数、学习者真实写错的句子、容易混的词——每一条都能点开看出处。<br><span class="pending">提供包标注了检索时间与出处；插电不会发起实时网络查询。</span></div></div>`;
@@ -1027,7 +1029,8 @@
     modal(`<button class="close" data-x="1">×</button><h2><span class="seal">语</span>数据从哪里来</h2><div class="sub">${esc(LESSON?.title || '课堂')} · 离线可用</div>
       <table>
         <tr><th>课文</th><td>${esc(LESSON?.textbook ? `《${LESSON.textbook.name}》第 ${LESSON.textbook.lesson} 课，按提供包作教学改编。` : LESSON?.provenance.note || '课堂自编内容。')}</td></tr>
-        <tr><th>词语等级</th><td>${esc(H.meta.attribution)}。本原型只取本课用到的 ${Object.keys(H.w).length} 个词和字。</td></tr>
+        <tr><th>词语等级</th><td>《HSK考试大纲》2025-11版：11,000条词汇记录、10,896个词形。7–9级合并；多义词与括号补充等级保留，未做语境判级时按最高可能等级提示。专业词单独标记，不使用识字等级代替词汇等级。</td></tr>
+        <tr><th>拼音 / 英文</th><td>课内词使用教学词典；其他词参考 <a href="https://gushichinese.com/hsk-3.0/downloads" target="_blank" rel="noopener noreferrer">Gushi</a> 整理的辅助拼音与英文（<a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>），不代表官方词义消歧。本项目依据官方大纲补充等级与序号，保留同形词多记录。词卡第三方例句与共字拓展沿用交付包，不是本次语料检索结果。</td></tr>
         <tr><th>语料</th><td>交付包提供了 ${ids.length} 条带检索记录的语料快照，记录称于 2026-11-07/08 从国际中文教育语料库获取。本次沿用快照，没有重新请求平台核验。点“语”查看原句、来源和样本范围；改写另行标注。</td></tr>
         <tr><th>脚本 / 规则</th><td>课堂推进和判题由本地规则控制。“问师傅”可使用服务端配置的模型，未经配置或校验未通过时返回课堂参考回答。模型回答不会获得“语”印章，也不会替你通过关卡。</td></tr>
         <tr><th>未插电</th><td>使用固定课堂内容，关闭扩展语料显示。两种模式都遵守相同的教学正确性要求，不故意加入没有依据的错误。</td></tr>
