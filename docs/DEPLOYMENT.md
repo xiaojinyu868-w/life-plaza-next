@@ -2,6 +2,8 @@
 
 公网静态演示使用 [GitHub Pages](https://xiaojinyu868-w.github.io/life-plaza-next/)，学院服务器与云端服务仍需独立部署。旧仓库的 nginx 配置、域名、端口与发布命令不用于本项目。
 
+2026-11-09 首次发布已成功：[部署记录](https://github.com/xiaojinyu868-w/life-plaza-next/actions/runs/42584285139)。部署源为 `b5c91ae8f8f1daffdb7bd29d3fc76217df7f7427`；匿名公网访问与下载哈希核对通过，HTML SHA-256 为 `f791994985b531a4448cf772eb1471c54cdc4c5eb74650b8577533bc410c9219`，与已验证的双小龙离线版完全一致。实际 Edge 公网页面在1440×900和390×844均进入课堂并切换两款模型，WebGL错误0、页面异常0、无横向溢出；截图与报告在本机 `artifacts/pages-browser/`。此次未新增真人语音或云服务验收。
+
 ## 公网演示与自动更新
 
 `.github/workflows/deploy-pages.yml` 在 main 的应用、课程、模型或发布脚本变化时运行，也可从 GitHub Actions 手动触发。构建使用 Node.js 24，无需安装应用依赖；`node scripts/build-pages.cjs` 调用原有构建，将完全相同的单文件课堂复制为 `dist/pages/index.html`。
