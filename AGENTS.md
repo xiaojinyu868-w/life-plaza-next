@@ -5,6 +5,7 @@
 - 本目录是新的独立项目。范围为人生广场与中文学习；借光与本项目无关，不读取、修改或迁入借光代码。
 - 新 GitHub 仓库为 `xiaojinyu868-w/life-plaza-next`，2026-11-09 按用户要求改为公开，供合作伙伴获取交付源码与文档。推送前用 `git remote -v` 确认目标。
 - 不向 `life-learn`、`life-plaza-learn-chinese` 或其他旧仓库推送。旧仓库是来源，不是发布目标。
+- 公网静态课堂使用 GitHub Pages：`https://xiaojinyu868-w.github.io/life-plaza-next/`。工作流 `.github/workflows/deploy-pages.yml` 发布 main 的课堂变更；以实际工作流结果与线上 `version.json` 核对版本。它不包含 Node 后端、云服务或教师数据，不能称为学院完整部署。
 - 当前已经从用户提供的“插电工坊”深化包导入源码，并增加本机服务与联网降级。真实模型、语音厂商、语料回源和 Marble 车间验收分别记录，不能把接口适配器或测试桩称为真实接入完成。
 - 先读 `README.md`、`docs/PRODUCT.md`、`docs/BASELINE.md`、`docs/DATA-SOURCES.md`。
 

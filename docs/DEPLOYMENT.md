@@ -1,6 +1,16 @@
 # 运行与部署
 
-当前已在本机运行验证，尚未发布到学院服务器或公网。这里提供部署入口，不表示某个部署目标已经生效。旧仓库的 nginx 配置、域名、端口与发布命令不用于本项目。
+公网静态演示使用 [GitHub Pages](https://xiaojinyu868-w.github.io/life-plaza-next/)，学院服务器与云端服务仍需独立部署。旧仓库的 nginx 配置、域名、端口与发布命令不用于本项目。
+
+## 公网演示与自动更新
+
+`.github/workflows/deploy-pages.yml` 在 main 的应用、课程、模型或发布脚本变化时运行，也可从 GitHub Actions 手动触发。构建使用 Node.js 24，无需安装应用依赖；`node scripts/build-pages.cjs` 调用原有构建，将完全相同的单文件课堂复制为 `dist/pages/index.html`。
+
+Pages 只发布 `index.html`、`.nojekyll` 和 `version.json`，不上传仓库根目录、本机配置、教师数据、录音或原始交付文件。`version.json` 记录源提交、HTML 的 SHA-256 与大小，供核对当前实际发布版本；Git 推送成功不等于 Pages 部署完成，须等待工作流部署成功及公网访问验证。
+
+该链接支持完整六站课堂、两种小龙、内置词表与语料快照。它没有 Node 后端，因此云对话、云语音/评测、实时语料回源和教师汇总不在本次部署范围。初始保持离线教学模式；浏览器自身语音能力也不等于已部署语音供应商。
+
+回退课堂时，恢复所需源码/模型版本后推送 main 并等待工作流完成，或在 GitHub Actions 对相应提交重新执行发布；始终核对线上版本元数据与页面内容。
 
 ## 本机与离线
 
